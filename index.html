@@ -2428,13 +2428,13 @@ function viewQr(){
     <div class="card"><h3>Indirizzo collegato</h3>
       <div class="stack">
         <label>Indirizzo del QR<input id="qr-url" value="${esc(db.settings.site)}"></label>
-        <label class="chk"><input type="checkbox" id="qr-logo-on" ${db.settings.qrLogo !== false ? 'checked' : ''} onchange="db.settings.qrLogo=this.checked;save();makeQr()"> Logo al centro del QR</label>
+        <label class="chk"><input type="checkbox" id="qr-logo-on" ${db.settings.qrLogo === true ? 'checked' : ''} onchange="db.settings.qrLogo=this.checked;save();makeQr()"> Logo al centro del QR</label>
         <div class="actions">
           <label class="btn ghost">${db.settings.logo ? 'Cambia logo' : 'Carica il tuo logo'}<input type="file" accept="image/*" hidden onchange="setQrLogo(this)"></label>
           ${db.settings.logo ? '<button class="ghost sm" onclick="db.settings.logo=\'\';save();render()">Usa il logo predefinito</button>' : ''}
         </div>
         <div class="actions"><button onclick="makeQr()">Genera QR</button></div>
-        <p class="muted small">Stampalo su biglietti, vetrina o furgone: il cliente lo inquadra con la fotocamera e apre il sito. Il logo copre il centro del codice, che resta leggibile grazie alla correzione d'errore alta.</p>
+        <p class="muted small">Stampalo su biglietti, vetrina o furgone: il cliente lo inquadra con la fotocamera e apre il sito. Il logo è facoltativo: se lo attivi copre il centro del codice, che resta comunque leggibile.</p>
       </div>
     </div>
     <div class="card qr-card">
@@ -2453,7 +2453,7 @@ function makeQr(){
   new QRCode(box, {text:url, width:240, height:240, colorDark:'#0f2b40', colorLight:'#ffffff', correctLevel:QRCode.CorrectLevel.H});
   document.getElementById('qr-label').textContent = url;
   if (url !== db.settings.site) { db.settings.site = url; save(); }
-  if (db.settings.qrLogo !== false) setTimeout(() => drawQrLogo(box), 60);
+  if (db.settings.qrLogo === true) setTimeout(() => drawQrLogo(box), 60);
 }
 // Logo al centro del QR: quello caricato in questa sezione, altrimenti una goccia Watergold disegnata qui
 function drawQrLogo(box){
@@ -2497,7 +2497,6 @@ function setQrLogo(input){
       cv.width = Math.round(im.width * k); cv.height = Math.round(im.height * k);
       cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height);
       db.settings.logo = cv.toDataURL('image/png');
-      db.settings.qrLogo = true;
       commit();
     };
     im.src = rd.result;
@@ -2614,7 +2613,9 @@ const RICHIESTE = [
   {data:'2026-10-27', sezione:'Pianifica giri', testo:'Collaudo invio con un tocco dal gestionale', stato:'fatta',
    risposta:'Collaudo riuscito: la richiesta è arrivata ed è stata letta.'},
   {data:'2026-10-27', sezione:'QR code', testo:'logo al centro del qr', stato:'fatta',
-   risposta:'Nella sezione QR code ora c\'è il logo al centro, attivo di serie. Puoi caricare il logo Watergold con "Carica il tuo logo" (finché non lo carichi compare una goccia nei colori Watergold) o toglierlo con la casella "Logo al centro del QR". Il codice resta leggibile.'}
+   risposta:'Nella sezione QR code ora c\'è il logo al centro, attivo di serie. Puoi caricare il logo Watergold con "Carica il tuo logo" (finché non lo carichi compare una goccia nei colori Watergold) o toglierlo con la casella "Logo al centro del QR". Il codice resta leggibile.'},
+  {data:'2026-10-27', sezione:'QR code', testo:'Togli logo da qr', stato:'fatta',
+   risposta:'Fatto: il QR code ora è senza logo. Se un giorno lo vorrai di nuovo, basta spuntare la casella "Logo al centro del QR" nella stessa pagina.'}
 ];
 const REQ_STATI = {ricevuta:['Ricevuta',''], lavorazione:['In lavorazione','in_corso'], fatta:['Fatta','completato'], chiarire:['Da chiarire','annullato']};
 function reqForm(){
