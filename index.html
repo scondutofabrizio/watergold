@@ -645,7 +645,7 @@ let view = 'dash';
 let ui = {
   agDate: ymd(new Date()), agTech: 'all', cq: '', cf: 'all', cPage: 0, stockQ: '',
   invMonth: ymd(new Date()).slice(0,7), waMonth: ymd(new Date()).slice(0,7), waOnly: false, waHideSent: true,
-  giroTech: null, giroDate: ymd(new Date()), giroZona: false, scanned: null, cCity: 'all', pl: null, plDay: 0, plAuto: false, plTech: 'all', plView: null
+  giroTech: null, giroDate: ymd(new Date()), giroZona: false, scanned: null, cCity: 'all', pl: null, plDay: 0, plAuto: false, plTech: 'all', plView: null, plMese: false, placing: null
 };
 let pendingPlan = null;
 const VIEWS = {dash:viewDash, pianifica:viewPianifica, agenda:viewAgenda, giro:viewGiro, clienti:viewClienti, magazzino:viewMagazzino,
@@ -1079,21 +1079,34 @@ function orderRoute(list, start){
   return path.slice(1);
 }
 // Orari e chilometri di un giro; se la zona è lontana dalla sede si parte dal primo cliente
+// Punto di partenza del giro: la sede (predefinito), un comune scelto o direttamente il primo cliente
+function routeStart(r){
+  if (r.start === 'primo') return null;
+  if (r.start && r.start !== 'sede') { const t = TOWNS.find(x => x[0] === r.start); if (t) return {lat: t[1], lng: t[2], label: t[0]}; }
+  return db.settings.depot;
+}
+const stopDur = s => s.tipo === 'installazione' ? 90 : +db.plan.dur;
 function routeInfo(r){
-  const p = db.plan, dep = db.settings.depot;
-  let t = toMin(p.start), km = 0, prev = dep, remote = false;
+  const p = db.plan, st = routeStart(r);
+  let t = toMin(p.start), km = 0, prev = st, remote = false;
   const rows = r.stops.filter(s => !isOut(s)).map((s, i) => {
     const c = byId(db.clients, s.cid);
-    let leg = roadKm(prev, c);
-    if (i === 0 && leg > 30) { remote = true; leg = 0; }
+    let leg = prev ? roadKm(prev, c) : 0;
+    // con la partenza dalla sede, una zona a più di 30 km parte dal primo cliente
+    if (i === 0 && prev && (!r.start || r.start === 'sede') && leg > 30) { remote = true; leg = 0; }
     t = Math.ceil((t + driveMin(leg)) / 5) * 5;
     km += leg;
     const row = {s, c, leg, eta: t};
-    t += +p.dur;
+    t += stopDur(s);
     prev = c;
     return row;
   });
-  return {rows, km, end: t, remote};
+  return {rows, km, end: t, remote, start: remote ? null : st};
+}
+function setRouteStart(di, ri, v){
+  const r = db.plan.days[di].routes[ri];
+  r.start = v;
+  reoptimize(di, ri);
 }
 function planGiri(){
   if (!requireAdmin()) return;
@@ -1214,11 +1227,13 @@ function bookConfirmed(){
   const kit = [{itemId:'i1', qty:1}, {itemId:'i2', qty:1}];
   const svc = db.settings.services.find(s => s.name === FILTRI) || db.settings.services[0];
   let n = 0;
+  const inst = db.settings.services.find(s => s.name === 'Installazione depuratore') || {name: 'Installazione depuratore', price: 250};
   db.plan.days.forEach(d => d.routes.forEach(r => routeInfo(r).rows.forEach(({s, c, eta}) => {
     if (s.call !== 'confermato' || s.apptId) return;
-    const a = {id: uid(), date: d.date, time: minToT(eta), duration: db.plan.dur, clientId: c.id, techId: r.techId, service: FILTRI, price: svc.price,
-      address: c.address, notes: 'Confermato al telefono · giro pianificato automaticamente', status: 'programmato',
-      materials: kit.filter(m => byId(db.items, m.itemId)).map(m => ({...m})), stockApplied: false};
+    const isI = s.tipo === 'installazione';
+    const a = {id: uid(), date: d.date, time: minToT(eta), duration: stopDur(s), clientId: c.id, techId: r.techId, service: isI ? inst.name : FILTRI, price: isI ? inst.price : svc.price,
+      address: c.address, notes: isI ? 'Nuovo cliente · installazione confermata al telefono' : 'Confermato al telefono · giro pianificato automaticamente', status: 'programmato',
+      materials: isI ? [] : kit.filter(m => byId(db.items, m.itemId)).map(m => ({...m})), stockApplied: false};
     db.appointments.push(a);
     s.apptId = a.id;
     n++;
@@ -1244,7 +1259,10 @@ function moveStop(di, ri, cid, dir){
 function reoptimize(di, ri){
   const r = db.plan.days[di].routes[ri];
   const out = r.stops.filter(isOut);
-  const ordered = orderRoute(r.stops.filter(s => !isOut(s)).map(s => byId(db.clients, s.cid)), db.settings.depot);
+  const act = r.stops.filter(s => !isOut(s)).map(s => byId(db.clients, s.cid));
+  const st = routeStart(r);
+  // "primo cliente": si parte dalla prima tappa attuale e si ordina il resto
+  const ordered = st ? orderRoute(act, st) : (act.length ? [act[0], ...orderRoute(act.slice(1), act[0])] : []);
   r.stops = ordered.map(c => r.stops.find(s => s.cid === c.id)).concat(out);
   commit();
 }
@@ -1315,7 +1333,7 @@ function planMap(day){
   return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;background:var(--soft);border-radius:10px;display:block" role="img" aria-label="Mappa dei giri">
     ${free.map(c => `<circle cx="${X(c)}" cy="${Y(c)}" r="5" fill="var(--muted)" opacity=".5" style="cursor:pointer" onclick="mapPick(${ui.plDay},'${c.id}')"><title>${esc(c.name)} · ${esc(c.address)} (da programmare: tocca per aggiungerlo a un giro)</title></circle>`).join('')}
     ${routes.map(({info, t}) => {
-      const path = (showDep && !info.remote ? [dep] : []).concat(info.rows.map(y => y.c));
+      const path = (info.start && (info.start !== dep || showDep) ? [info.start] : []).concat(info.rows.map(y => y.c));
       return `<polyline points="${path.map(p => X(p) + ',' + Y(p)).join(' ')}" fill="none" stroke="${t.color}" stroke-width="2.5" stroke-linejoin="round" opacity=".85"/>` +
         info.rows.map((y, i) => `<g><circle cx="${X(y.c)}" cy="${Y(y.c)}" r="10" fill="${t.color}" stroke="#fff" stroke-width="1.5"/>
           <text x="${X(y.c)}" y="${Y(y.c)}" dy="3.5" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">${i + 1}</text>
@@ -1324,6 +1342,37 @@ function planMap(day){
     ${showDep ? `<rect x="${+X(dep) - 8}" y="${+Y(dep) - 8}" width="16" height="16" rx="3" fill="#e3b64b" stroke="#0f2b40" stroke-width="1.5"><title>${esc(dep.label)}</title></rect>` : ''}
   </svg>
   <p class="muted small" style="margin:6px 0 0">${showDep ? '🟨 sede · ' : ''}cerchi numerati = ordine delle tappe per tecnico · puntini grigi = clienti liberi in zona (anche del mese dopo): toccali per aggiungerli</p>`;
+}
+// Tutte le manutenzioni del mese solare, senza giorno: da programmare, già in agenda, fatte
+function monthRows(p){
+  const ym = p.month, cities = p.cities.length ? p.cities : null;
+  const inCity = c => c && (!cities || cities.includes(c.city));
+  const inP = new Map();
+  if (db.plan) db.plan.days.forEach(d => d.routes.forEach(r => r.stops.forEach(s => inP.set(s.cid, {s, tech: r.techId}))));
+  const rows = [];
+  daProgrammare(ym, p.arretrati).forEach(c => { if (inCity(c)) rows.push({c, stato: inP.has(c.id) ? 'piano' : 'daprog', info: inP.get(c.id)}); });
+  db.appointments.filter(a => monthOf(a.date) === ym && (a.service === FILTRI || a.service === 'Installazione depuratore') && a.status !== 'annullato')
+    .forEach(a => { const c = byId(db.clients, a.clientId); if (inCity(c)) rows.push({c, a, stato: a.status === 'completato' ? 'fatta' : 'agenda'}); });
+  return rows;
+}
+const MESE_ST = {daprog: ['Da programmare', 'annullato'], piano: ['Nel piano giri', ''], agenda: ['In agenda', 'programmato'], fatta: ['Fatta', 'completato']};
+function monthSummary(p){
+  const rows = monthRows(p);
+  const cnt = k => rows.filter(r => r.stato === k).length;
+  const head = `<div class="kpis" style="margin-bottom:0">${Object.keys(MESE_ST).map(k => kpi(MESE_ST[k][0], cnt(k), k === 'daprog' && cnt(k) ? 'warn' : '')).join('')}</div>
+    <p class="muted small" style="margin:8px 0 0">${p.cities.length ? 'Comuni scelti: ' + esc(p.cities.join(', ')) : 'Tutti i comuni'} · totale ${rows.length} manutenzioni nel mese${p.arretrati ? ' (con arretrati)' : ''}</p>`;
+  if (!ui.plMese) return head;
+  const order = {daprog: 0, piano: 1, agenda: 2, fatta: 3};
+  const list = rows.sort((a, b) => order[a.stato] - order[b.stato] || a.c.city.localeCompare(b.c.city) || (a.c.zona || '').localeCompare(b.c.zona || ''));
+  return head + `<div class="tbl-wrap" style="margin-top:10px"><table>
+    <thead><tr><th>Stato</th><th>Cliente</th><th>Indirizzo</th><th>Scadenza</th><th>Dettaglio</th></tr></thead>
+    <tbody>${list.map(r => `<tr>
+      <td data-label="Stato"><span class="badge ${MESE_ST[r.stato][1]}">${MESE_ST[r.stato][0]}</span></td>
+      <td data-label="Cliente"><b>${esc(r.c.name)}</b><br><small class="muted">${esc(r.c.phone)}</small></td>
+      <td data-label="Indirizzo">${esc(r.c.address)}${r.c.zona && r.c.zona !== r.c.city ? `<br><small class="muted">${esc(r.c.zona)}</small>` : ''}</td>
+      <td data-label="Scadenza">${r.c.prossimoCambio ? fmtDate(r.c.prossimoCambio) : '—'}</td>
+      <td data-label="Dettaglio" class="small">${r.a ? `${fmtDate(r.a.date)} ${r.a.time} · ${esc(tname(r.a.techId))}` : r.info ? `${esc(tname(r.info.tech))} · ${CALL[r.info.s.call][0]}` : '—'}</td>
+    </tr>`).join('') || '<tr><td colspan="5" class="muted">Nessuna manutenzione nel mese.</td></tr>'}</tbody></table></div>`;
 }
 function plToggleCity(city){
   const p = ui.pl;
@@ -1377,6 +1426,11 @@ function viewPianifica(){
     <button class="big" style="max-width:520px" onclick="planGiri()" ${sel.length && p.techs.length ? '' : 'disabled'}>⚡ Calcola i giri automaticamente</button>
     <p class="muted small" style="margin-bottom:0">Raggruppa i clienti vicini, assegna un gruppo a ogni tecnico, ordina il percorso più corto e calcola orari e chilometri. Al posto di chi non risponde propone da solo il cliente libero più vicino.</p>
   </div>
+  <div class="card">
+    <div class="top"><h3 style="margin:0">📋 Manutenzioni di ${mesLabel(p.month)}</h3>
+      <button class="${ui.plMese ? '' : 'ghost'} sm" onclick="ui.plMese=!ui.plMese;render()">${ui.plMese ? 'Nascondi' : 'Mostra tutte'}</button></div>
+    ${monthSummary(p)}
+  </div>
   ${db.plan ? planResult() : ''}`;
 }
 function planResult(){
@@ -1427,12 +1481,19 @@ function routeCard(di, ri, r){
   const t = byId(db.users, r.techId) || {color: '#888', name: '—'};
   const info = routeInfo(r);
   const out = r.stops.filter(isOut);
-  const pts = (info.remote ? [] : [db.settings.depot]).concat(info.rows.map(x => x.c));
+  const pts = (info.start ? [info.start] : []).concat(info.rows.map(x => x.c));
+  const towns = [...new Set(info.rows.map(x => x.c.city))].concat(TOWNS.map(x => x[0])).filter((v, i, a) => a.indexOf(v) === i);
   return `<div class="col">
     <div class="colh" style="border-color:${t.color}">
       <select onchange="setRouteTech(${di},${ri},this.value)" style="font-weight:600">${tecnici().map(x => `<option value="${x.id}" ${x.id === r.techId ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>
     </div>
-    <div class="muted small">${info.rows.length} interventi · ${fmtKm(info.km)} · ${db.plan.start}–${minToT(info.end)}${info.remote ? ' · zona lontana: orari dal primo cliente' : ''}</div>
+    <label style="flex-direction:row;align-items:center;gap:6px;margin:4px 0">Partenza
+      <select onchange="setRouteStart(${di},${ri},this.value)">
+        <option value="sede" ${!r.start || r.start === 'sede' ? 'selected' : ''}>🏠 Sede</option>
+        <option value="primo" ${r.start === 'primo' ? 'selected' : ''}>📍 Dal primo cliente</option>
+        <optgroup label="Da un comune">${towns.map(x => `<option value="${esc(x)}" ${r.start === x ? 'selected' : ''}>${esc(x)}</option>`).join('')}</optgroup>
+      </select></label>
+    <div class="muted small">${info.rows.length} interventi · ${fmtKm(info.km)} · ${db.plan.start}–${minToT(info.end)}${info.remote ? ' · zona lontana: orari dal primo cliente' : ''}${info.start && info.start.label && info.start !== db.settings.depot ? ' · parte da ' + esc(info.start.label) : ''}</div>
     <div class="actions" style="margin:8px 0">
       ${gmapsLinks(pts).map((u, i, a) => `<a class="btn ghost sm" style="padding:5px 9px;font-size:13px" href="${u}" target="_blank" rel="noopener">🗺️ Google Maps${a.length > 1 ? ` ${i + 1}/${a.length}` : ''}</a>`).join('')}
       <button class="ghost sm" onclick="reoptimize(${di},${ri})">↺ Riottimizza</button>
@@ -1442,6 +1503,7 @@ function routeCard(di, ri, r){
         ${x.s.apptId ? '<span class="badge programmato">In agenda</span>' : `<span class="badge ${CALL[x.s.call][1]}">${CALL[x.s.call][0]}</span>`}${x.s.added ? ' <span class="badge">aggiunto</span>' : ''}${x.c.prossimoCambio < ymd(new Date()) ? ' <span class="badge annullato">in ritardo</span>' : ''}</div>
       <div><b>${esc(x.c.name)}</b> <small class="muted">${esc(x.c.codice)}</small></div>
       <div class="muted small">${esc(x.c.address)}${x.c.zona && x.c.zona !== x.c.city ? ' · ' + esc(x.c.zona) : ''}</div>
+      ${x.s.tipo === 'installazione' ? '<div><span class="badge in_corso">🔧 Installazione (90 min)</span></div>' : ''}
       ${x.s.apptId ? '' : `<div class="row-acts">
         <button class="sm" onclick="callForm(${di},${ri},'${x.c.id}')">📞 Chiama</button>
         <button class="ghost sm" onclick="nearForm(${di},${ri},'${x.c.id}')">Più vicini</button>
@@ -1455,7 +1517,7 @@ function routeCard(di, ri, r){
       ${out.map(s => `<div class="rowline small"><s>${esc(cname(s.cid))}</s> · <span class="badge ${CALL[s.call][1]}">${CALL[s.call][0]}</span> <button class="ghost sm" onclick="setCall(${di},${ri},'${s.cid}','da_chiamare')">Rimetti</button></div>`).join('')}` : ''}
     ${(() => { const f = bestNearest(r); return f ? `<div class="hint" style="margin-top:8px">💡 <b>Proposta:</b> ${esc(f.best.name)}${anticipo(f.best)}<br><small>${esc(f.best.address)} · allunga il giro di ${fmtKm(f.extra)}</small>
       <div class="row-acts"><button class="sm" onclick="replaceNearest(${di},${ri});commit()">Aggiungi</button><button class="ghost sm" onclick="nearForm(${di},${ri},'${f.best.id}')">Altri vicini</button></div></div>` : ''; })()}
-    <div class="row-acts"><button class="ghost sm" onclick="addSearchForm(${di},${ri})">🔍 Aggiungi un cliente a scelta</button></div>
+    <div class="row-acts"><button class="ghost sm" onclick="addSearchForm(${di},${ri})">🔍 Aggiungi un cliente a scelta</button><button class="ghost sm" onclick="newInstallForm(${di},${ri})">➕ Cliente nuovo da installare</button></div>
   </div>`;
 }
 function routeOpts(di, ri){
@@ -1512,7 +1574,45 @@ function mapPick(di, cid){
     `<button class="ghost" onclick="closeModal()">Annulla</button>`);
 }
 // Completare un cambio filtri aggiorna la prossima scadenza del cliente
+// Cliente nuovo (non ancora in anagrafica) da installare: lo crea e lo mette nel giro scelto
+function newInstallForm(di, ri){
+  const day = db.plan.days[di];
+  modal('➕ Cliente nuovo da installare', `
+    <p class="muted small" style="margin-top:0">Il cliente viene aggiunto all'anagrafica e inserito nel giro nel punto più comodo. L'installazione dura 90 minuti; dopo l'installazione il gestionale programma da solo il primo cambio filtri.</p>
+    <div class="grid2">
+      <label class="full">Nome e cognome / Ragione sociale<input id="ni-name"></label>
+      <label>Telefono<input id="ni-phone" inputmode="tel"></label>
+      <label>Comune<select id="ni-city">${TOWNS.map(t => `<option>${esc(t[0])}</option>`).join('')}</select></label>
+      <label class="full">Indirizzo (via e numero)<input id="ni-addr" placeholder="Es. Via Roma 10"></label>
+      <label>Giro<select id="ni-route">${day.routes.map((r, j) => `<option value="${j}" ${j === ri ? 'selected' : ''}>${esc(tname(r.techId))}</option>`).join('')}</select></label>
+      <label>Cambio filtri ogni (mesi)<input id="ni-ft" type="number" min="1" value="6"></label>
+    </div>
+    <p class="muted small">Dopo il salvataggio puoi toccare la mappa nel punto esatto della casa per posizionarlo con precisione.</p>`,
+    `<button class="ghost" onclick="closeModal()">Annulla</button><button onclick="saveInstall(${di})">Aggiungi al giro</button>`);
+}
+function saveInstall(di){
+  const name = val('ni-name').trim(), city = val('ni-city'), via = val('ni-addr').trim();
+  if (!name || !via) return alert('Scrivi almeno il nome e l\'indirizzo.');
+  const g = geoGuess(city) || {lat: db.settings.depot.lat, lng: db.settings.depot.lng};
+  const t = TOWNS.find(x => x[0] === city);
+  const c = {id: 'c' + uid(), codice: 'C' + pad(maxCode() + 1, 5), name, type: 'privato', phone: val('ni-phone').trim(), email: '',
+    address: `${via}, ${city}`, cap: t ? t[3] : '', city, prov: t ? t[5] : '', zona: city, lat: g.lat, lng: g.lng,
+    filtroMesi: +val('ni-ft') || 6, ultimoCambio: '', prossimoCambio: '', vat: '', sdi: '', pec: '', monthly: false, whatsappOk: false,
+    consentDate: '', notes: 'Nuovo cliente: installazione da fare'};
+  db.clients.push(c);
+  insertBest(db.plan.days[di].routes[+val('ni-route')], {cid: c.id, call: 'da_chiamare', tries: 0, added: true, tipo: 'installazione'});
+  ui.placing = c.id;
+  logAct(`Nuovo cliente da installare: ${name} (${city}) inserito nel giro`);
+  closeModal();
+  commit();
+}
 function applyFiltri(a){
+  // dopo l'installazione parte il conteggio del primo cambio filtri
+  if (a.service === 'Installazione depuratore' && a.status === 'completato') {
+    const c = byId(db.clients, a.clientId);
+    if (c && !c.prossimoCambio) { c.ultimoCambio = a.date; c.prossimoCambio = addMonths(a.date, c.filtroMesi || 6); }
+    return;
+  }
   if (a.service !== FILTRI || a.status !== 'completato') return;
   const c = byId(db.clients, a.clientId);
   if (!c || (c.ultimoCambio && c.ultimoCambio >= a.date)) return;
@@ -1592,7 +1692,7 @@ function drawPlanMap(){
     const t = byId(db.users, r.techId) || {color: '#888', name: '—'};
     const on = sel === 'all' || sel === r.techId;
     const info = routeInfo(r);
-    const path = (info.remote ? [] : [dep]).concat(info.rows.map(x => x.c)).map(p => [p.lat, p.lng]);
+    const path = (info.start ? [info.start] : []).concat(info.rows.map(x => x.c)).map(p => [p.lat, p.lng]);
     if (path.length > 1) L.polyline(path, {color: t.color, weight: on ? 4 : 2, opacity: on ? .85 : .2}).addTo(map);
     info.rows.forEach((x, i) => {
       const icon = L.divIcon({className: '', iconSize: [26, 26], iconAnchor: [13, 13],
@@ -1620,6 +1720,17 @@ function drawPlanMap(){
   if (keep) map.setView(ui.plView.center, ui.plView.zoom);
   else if (bounds.length) map.fitBounds(bounds, {padding: [30, 30], maxZoom: 16});
   else map.setView([dep.lat, dep.lng], 12);
+  if (ui.placing) {
+    const pc = byId(db.clients, ui.placing);
+    if (pc) L.popup().setLatLng([pc.lat, pc.lng]).setContent(`<b>${esc(pc.name)}</b><br>Tocca la mappa nel punto esatto della casa per posizionarlo.<div class="row-acts"><button class="ghost sm" onclick="ui.placing=null;render()">Va bene così</button></div>`).openOn(map);
+    map.on('click', e => {
+      const c = byId(db.clients, ui.placing);
+      if (!c) return;
+      c.lat = round6(e.latlng.lat); c.lng = round6(e.latlng.lng);
+      ui.placing = null;
+      commit();
+    });
+  }
   map.on('moveend', () => { ui.plView = {key: di + '|' + sel, center: map.getCenter(), zoom: map.getZoom()}; });
 }
 function setPlTech(v){ ui.plTech = v; ui.plView = null; render(); }
@@ -2615,7 +2726,9 @@ const RICHIESTE = [
   {data:'2026-10-27', sezione:'QR code', testo:'logo al centro del qr', stato:'fatta',
    risposta:'Nella sezione QR code ora c\'è il logo al centro, attivo di serie. Puoi caricare il logo Watergold con "Carica il tuo logo" (finché non lo carichi compare una goccia nei colori Watergold) o toglierlo con la casella "Logo al centro del QR". Il codice resta leggibile.'},
   {data:'2026-10-27', sezione:'QR code', testo:'Togli logo da qr', stato:'fatta',
-   risposta:'Fatto: il QR code ora è senza logo. Se un giorno lo vorrai di nuovo, basta spuntare la casella "Logo al centro del QR" nella stessa pagina.'}
+   risposta:'Fatto: il QR code ora è senza logo. Se un giorno lo vorrai di nuovo, basta spuntare la casella "Logo al centro del QR" nella stessa pagina.'},
+  {data:'2026-10-27', sezione:'Pianifica giri', testo:"LE DATE DI PROGRAMMAZIONE DEVONO FARE RIFERIMENTO AL MESE SOLARE , CIOE' VISUALIZZARE PER OGNI SINGOLO MESE TUTTE LE MANUTENZIONI IN PROGRAMMA SENZA CONSIDERARE UN GIORNO SPECIFICO.\nCOME INSERISCO NELLA PIANIFICAZIONE UN CLIENTE  NUOVO DA ISTALLARE E CHE QUINDI NON E' NEL DATABASE?\nCOME FACCIO A SCEGLIERE IL PUNTO DI PARTENZA AVENDO DIVERSE CITTA' NELLA STESSA GIORNATA?", stato:'fatta',
+   risposta:'1) In "Pianifica giri" c\'è il nuovo riquadro "📋 Manutenzioni del mese": scegli il mese e i comuni e vedi tutte le manutenzioni del mese solare, senza giorno, divise in Da programmare, Nel piano giri, In agenda e Fatte. Con "Mostra tutte" hai l\'elenco completo. 2) In ogni giro c\'è il pulsante "➕ Cliente nuovo da installare": scrivi nome, telefono, comune e indirizzo e il cliente entra nel giro nel punto più comodo (installazione da 90 minuti); poi tocca la mappa sulla casa per posizionarlo con precisione. Dopo l\'installazione il gestionale programma da solo il primo cambio filtri. 3) In ogni giro c\'è "Partenza": scegli Sede, Dal primo cliente oppure il comune da cui parte il tecnico; il percorso e gli orari si ricalcolano da lì.'}
 ];
 const REQ_STATI = {ricevuta:['Ricevuta',''], lavorazione:['In lavorazione','in_corso'], fatta:['Fatta','completato'], chiarire:['Da chiarire','annullato']};
 function reqForm(){
