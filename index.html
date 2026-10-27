@@ -1,0 +1,2705 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gestionale Watergold</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+/* Leaflet 1.9.4 (mappa) */
+.leaflet-image-layer,.leaflet-layer,.leaflet-marker-icon,.leaflet-marker-shadow,.leaflet-pane,.leaflet-pane>canvas,.leaflet-pane>svg,.leaflet-tile,.leaflet-tile-container,.leaflet-zoom-box{position:absolute;left:0;top:0}.leaflet-container{overflow:hidden}.leaflet-marker-icon,.leaflet-marker-shadow,.leaflet-tile{-webkit-user-select:none;-moz-user-select:none;user-select:none;-webkit-user-drag:none}.leaflet-tile::selection{background:0 0}.leaflet-safari .leaflet-tile{image-rendering:-webkit-optimize-contrast}.leaflet-safari .leaflet-tile-container{width:1600px;height:1600px;-webkit-transform-origin:0 0}.leaflet-marker-icon,.leaflet-marker-shadow{display:block}.leaflet-container .leaflet-overlay-pane svg{max-width:none!important;max-height:none!important}.leaflet-container .leaflet-marker-pane img,.leaflet-container .leaflet-shadow-pane img,.leaflet-container .leaflet-tile,.leaflet-container .leaflet-tile-pane img,.leaflet-container img.leaflet-image-layer{max-width:none!important;max-height:none!important;width:auto;padding:0}.leaflet-container img.leaflet-tile{mix-blend-mode:plus-lighter}.leaflet-container.leaflet-touch-zoom{-ms-touch-action:pan-x pan-y;touch-action:pan-x pan-y}.leaflet-container.leaflet-touch-drag{-ms-touch-action:pinch-zoom;touch-action:none;touch-action:pinch-zoom}.leaflet-container.leaflet-touch-drag.leaflet-touch-zoom{-ms-touch-action:none;touch-action:none}.leaflet-container{-webkit-tap-highlight-color:transparent}.leaflet-container a{-webkit-tap-highlight-color:rgba(51,181,229,.4)}.leaflet-tile{filter:inherit;visibility:hidden}.leaflet-tile-loaded{visibility:inherit}.leaflet-zoom-box{width:0;height:0;-moz-box-sizing:border-box;box-sizing:border-box;z-index:800}.leaflet-overlay-pane svg{-moz-user-select:none}.leaflet-pane{z-index:400}.leaflet-tile-pane{z-index:200}.leaflet-overlay-pane{z-index:400}.leaflet-shadow-pane{z-index:500}.leaflet-marker-pane{z-index:600}.leaflet-tooltip-pane{z-index:650}.leaflet-popup-pane{z-index:700}.leaflet-map-pane canvas{z-index:100}.leaflet-map-pane svg{z-index:200}.leaflet-vml-shape{width:1px;height:1px}.lvml{behavior:url(#default#VML);display:inline-block;position:absolute}.leaflet-control{position:relative;z-index:800;pointer-events:visiblePainted;pointer-events:auto}.leaflet-bottom,.leaflet-top{position:absolute;z-index:1000;pointer-events:none}.leaflet-top{top:0}.leaflet-right{right:0}.leaflet-bottom{bottom:0}.leaflet-left{left:0}.leaflet-control{float:left;clear:both}.leaflet-right .leaflet-control{float:right}.leaflet-top .leaflet-control{margin-top:10px}.leaflet-bottom .leaflet-control{margin-bottom:10px}.leaflet-left .leaflet-control{margin-left:10px}.leaflet-right .leaflet-control{margin-right:10px}.leaflet-fade-anim .leaflet-popup{opacity:0;-webkit-transition:opacity .2s linear;-moz-transition:opacity .2s linear;transition:opacity .2s linear}.leaflet-fade-anim .leaflet-map-pane .leaflet-popup{opacity:1}.leaflet-zoom-animated{-webkit-transform-origin:0 0;-ms-transform-origin:0 0;transform-origin:0 0}svg.leaflet-zoom-animated{will-change:transform}.leaflet-zoom-anim .leaflet-zoom-animated{-webkit-transition:-webkit-transform .25s cubic-bezier(0,0,.25,1);-moz-transition:-moz-transform .25s cubic-bezier(0,0,.25,1);transition:transform .25s cubic-bezier(0,0,.25,1)}.leaflet-pan-anim .leaflet-tile,.leaflet-zoom-anim .leaflet-tile{-webkit-transition:none;-moz-transition:none;transition:none}.leaflet-zoom-anim .leaflet-zoom-hide{visibility:hidden}.leaflet-interactive{cursor:pointer}.leaflet-grab{cursor:-webkit-grab;cursor:-moz-grab;cursor:grab}.leaflet-crosshair,.leaflet-crosshair .leaflet-interactive{cursor:crosshair}.leaflet-control,.leaflet-popup-pane{cursor:auto}.leaflet-dragging .leaflet-grab,.leaflet-dragging .leaflet-grab .leaflet-interactive,.leaflet-dragging .leaflet-marker-draggable{cursor:move;cursor:-webkit-grabbing;cursor:-moz-grabbing;cursor:grabbing}.leaflet-image-layer,.leaflet-marker-icon,.leaflet-marker-shadow,.leaflet-pane>svg path,.leaflet-tile-container{pointer-events:none}.leaflet-image-layer.leaflet-interactive,.leaflet-marker-icon.leaflet-interactive,.leaflet-pane>svg path.leaflet-interactive,svg.leaflet-image-layer.leaflet-interactive path{pointer-events:visiblePainted;pointer-events:auto}.leaflet-container{background:#ddd;outline-offset:1px}.leaflet-container a{color:#0078a8}.leaflet-zoom-box{border:2px dotted #38f;background:rgba(255,255,255,.5)}.leaflet-container{font-family:"Helvetica Neue",Arial,Helvetica,sans-serif;font-size:12px;font-size:.75rem;line-height:1.5}.leaflet-bar{box-shadow:0 1px 5px rgba(0,0,0,.65);border-radius:4px}.leaflet-bar a{background-color:#fff;border-bottom:1px solid #ccc;width:26px;height:26px;line-height:26px;display:block;text-align:center;text-decoration:none;color:#000}.leaflet-bar a,.leaflet-control-layers-toggle{background-position:50% 50%;background-repeat:no-repeat;display:block}.leaflet-bar a:focus,.leaflet-bar a:hover{background-color:#f4f4f4}.leaflet-bar a:first-child{border-top-left-radius:4px;border-top-right-radius:4px}.leaflet-bar a:last-child{border-bottom-left-radius:4px;border-bottom-right-radius:4px;border-bottom:none}.leaflet-bar a.leaflet-disabled{cursor:default;background-color:#f4f4f4;color:#bbb}.leaflet-touch .leaflet-bar a{width:30px;height:30px;line-height:30px}.leaflet-touch .leaflet-bar a:first-child{border-top-left-radius:2px;border-top-right-radius:2px}.leaflet-touch .leaflet-bar a:last-child{border-bottom-left-radius:2px;border-bottom-right-radius:2px}.leaflet-control-zoom-in,.leaflet-control-zoom-out{font:bold 18px 'Lucida Console',Monaco,monospace;text-indent:1px}.leaflet-touch .leaflet-control-zoom-in,.leaflet-touch .leaflet-control-zoom-out{font-size:22px}.leaflet-control-layers{box-shadow:0 1px 5px rgba(0,0,0,.4);background:#fff;border-radius:5px}.leaflet-control-layers-toggle{background-image:url(images/layers.png);width:36px;height:36px}.leaflet-retina .leaflet-control-layers-toggle{background-image:url(images/layers-2x.png);background-size:26px 26px}.leaflet-touch .leaflet-control-layers-toggle{width:44px;height:44px}.leaflet-control-layers .leaflet-control-layers-list,.leaflet-control-layers-expanded .leaflet-control-layers-toggle{display:none}.leaflet-control-layers-expanded .leaflet-control-layers-list{display:block;position:relative}.leaflet-control-layers-expanded{padding:6px 10px 6px 6px;color:#333;background:#fff}.leaflet-control-layers-scrollbar{overflow-y:scroll;overflow-x:hidden;padding-right:5px}.leaflet-control-layers-selector{margin-top:2px;position:relative;top:1px}.leaflet-control-layers label{display:block;font-size:13px;font-size:1.08333em}.leaflet-control-layers-separator{height:0;border-top:1px solid #ddd;margin:5px -10px 5px -6px}.leaflet-default-icon-path{background-image:url(images/marker-icon.png)}.leaflet-container .leaflet-control-attribution{background:#fff;background:rgba(255,255,255,.8);margin:0}.leaflet-control-attribution,.leaflet-control-scale-line{padding:0 5px;color:#333;line-height:1.4}.leaflet-control-attribution a{text-decoration:none}.leaflet-control-attribution a:focus,.leaflet-control-attribution a:hover{text-decoration:underline}.leaflet-attribution-flag{display:inline!important;vertical-align:baseline!important;width:1em;height:.6669em}.leaflet-left .leaflet-control-scale{margin-left:5px}.leaflet-bottom .leaflet-control-scale{margin-bottom:5px}.leaflet-control-scale-line{border:2px solid #777;border-top:none;line-height:1.1;padding:2px 5px 1px;white-space:nowrap;-moz-box-sizing:border-box;box-sizing:border-box;background:rgba(255,255,255,.8);text-shadow:1px 1px #fff}.leaflet-control-scale-line:not(:first-child){border-top:2px solid #777;border-bottom:none;margin-top:-2px}.leaflet-control-scale-line:not(:first-child):not(:last-child){border-bottom:2px solid #777}.leaflet-touch .leaflet-bar,.leaflet-touch .leaflet-control-attribution,.leaflet-touch .leaflet-control-layers{box-shadow:none}.leaflet-touch .leaflet-bar,.leaflet-touch .leaflet-control-layers{border:2px solid rgba(0,0,0,.2);background-clip:padding-box}.leaflet-popup{position:absolute;text-align:center;margin-bottom:20px}.leaflet-popup-content-wrapper{padding:1px;text-align:left;border-radius:12px}.leaflet-popup-content{margin:13px 24px 13px 20px;line-height:1.3;font-size:13px;font-size:1.08333em;min-height:1px}.leaflet-popup-content p{margin:17px 0;margin:1.3em 0}.leaflet-popup-tip-container{width:40px;height:20px;position:absolute;left:50%;margin-top:-1px;margin-left:-20px;overflow:hidden;pointer-events:none}.leaflet-popup-tip{width:17px;height:17px;padding:1px;margin:-10px auto 0;pointer-events:auto;-webkit-transform:rotate(45deg);-moz-transform:rotate(45deg);-ms-transform:rotate(45deg);transform:rotate(45deg)}.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#fff;color:#333;box-shadow:0 3px 14px rgba(0,0,0,.4)}.leaflet-container a.leaflet-popup-close-button{position:absolute;top:0;right:0;border:none;text-align:center;width:24px;height:24px;font:16px/24px Tahoma,Verdana,sans-serif;color:#757575;text-decoration:none;background:0 0}.leaflet-container a.leaflet-popup-close-button:focus,.leaflet-container a.leaflet-popup-close-button:hover{color:#585858}.leaflet-popup-scrolled{overflow:auto}.leaflet-oldie .leaflet-popup-content-wrapper{-ms-zoom:1}.leaflet-oldie .leaflet-popup-tip{width:24px;margin:0 auto}.leaflet-oldie .leaflet-control-layers,.leaflet-oldie .leaflet-control-zoom,.leaflet-oldie .leaflet-popup-content-wrapper,.leaflet-oldie .leaflet-popup-tip{border:1px solid #999}.leaflet-div-icon{background:#fff;border:1px solid #666}.leaflet-tooltip{position:absolute;padding:6px;background-color:#fff;border:1px solid #fff;border-radius:3px;color:#222;white-space:nowrap;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,.4)}.leaflet-tooltip.leaflet-interactive{cursor:pointer;pointer-events:auto}.leaflet-tooltip-bottom:before,.leaflet-tooltip-left:before,.leaflet-tooltip-right:before,.leaflet-tooltip-top:before{position:absolute;pointer-events:none;border:6px solid transparent;background:0 0;content:""}.leaflet-tooltip-bottom{margin-top:6px}.leaflet-tooltip-top{margin-top:-6px}.leaflet-tooltip-bottom:before,.leaflet-tooltip-top:before{left:50%;margin-left:-6px}.leaflet-tooltip-top:before{bottom:0;margin-bottom:-12px;border-top-color:#fff}.leaflet-tooltip-bottom:before{top:0;margin-top:-12px;margin-left:-6px;border-bottom-color:#fff}.leaflet-tooltip-left{margin-left:-6px}.leaflet-tooltip-right{margin-left:6px}.leaflet-tooltip-left:before,.leaflet-tooltip-right:before{top:50%;margin-top:-6px}.leaflet-tooltip-left:before{right:0;margin-right:-12px;border-left-color:#fff}.leaflet-tooltip-right:before{left:0;margin-left:-12px;border-right-color:#fff}@media print{.leaflet-control{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+#plmap{height:480px;border-radius:10px;isolation:isolate;z-index:0;background:#f2efe9}
+.mlab{position:absolute;white-space:nowrap;transform:translate(-50%,-50%);pointer-events:none;color:#4a4a4a;text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 3px #fff}
+.mlab-via{font:11px system-ui,sans-serif;color:#555}
+.mlab-quar{font:600 12px system-ui,sans-serif;text-transform:uppercase;letter-spacing:.06em;color:#6d6257}
+.mlab-town{font:700 14px system-ui,sans-serif;color:#3a3a3a}
+.leaflet-popup-content{font:13px system-ui,sans-serif;color:#1c2633}
+@media (max-width:760px){#plmap{height:380px}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+:root{--bg:#f3f5f8;--card:#fff;--text:#1c2633;--muted:#6b7785;--line:#e1e6ee;--brand:#0b7bc1;--ok:#2e9e5b;--warn:#d89b00;--danger:#d64541;--side:#0f2b40}
+body{margin:0;font-family:system-ui,"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--text);font-size:15px}
+.app{display:flex;min-height:100vh}
+.side{width:220px;background:var(--side);color:#fff;padding:18px 12px;flex-shrink:0;display:flex;flex-direction:column;gap:10px}
+.brand{font-weight:700;font-size:20px;margin:0 8px;color:#e3b64b}
+.who{margin:0 8px;font-size:13px;color:#cfe0ef}
+.nav{display:flex;flex-direction:column;gap:3px}
+.nav button{background:none;color:#cfe0ef;text-align:left;padding:9px 12px;border-radius:8px;font-size:14px}
+.nav button.on,.nav button:hover{background:rgba(255,255,255,.12);color:#fff}
+.logout{margin-top:auto}
+.muted-l{font-size:11px;color:#8fa6ba;margin:0 8px}
+main{flex:1;padding:24px;min-width:0}
+h2{margin:0 0 6px;font-size:24px}
+h3{margin:0 0 10px;font-size:17px}
+.sec-head{margin-bottom:14px}
+.desc{margin:0;color:var(--muted);font-size:14px}
+.top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+button,.btn{background:var(--brand);color:#fff;border:0;border-radius:8px;padding:8px 14px;font-size:14px;cursor:pointer;text-decoration:none;display:inline-block}
+button:disabled{opacity:.5;cursor:default}
+button.ghost,.btn.ghost{background:#fff;color:var(--text);border:1px solid var(--line)}
+button.danger{background:var(--danger)}
+button.ok{background:var(--ok)}
+button.sm{padding:5px 9px;font-size:13px}
+button.big{padding:14px;font-size:16px;width:100%}
+input,select,textarea{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--text);max-width:100%}
+textarea{width:100%;min-height:70px}
+label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+label.chk{flex-direction:row;align-items:center;gap:8px;color:var(--text);font-size:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid2 .full{grid-column:1/-1}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:14px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+.kpi span{display:block;color:var(--muted);font-size:13px}
+.kpi b{font-size:22px}
+.kpi.warn{border-color:var(--warn)}
+.muted{color:var(--muted)}
+.small{font-size:12px}
+.empty{padding:10px 0}
+.r{text-align:right}
+.acts{white-space:nowrap}
+.acts button{margin-left:4px}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:13px;color:var(--muted);font-weight:600}
+.badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:12px;background:#e8edf3;color:#334}
+.badge.completato{background:#dff3e7;color:#18703f}
+.badge.programmato{background:#e1effa;color:#0b5a8f}
+.badge.in_corso{background:#fff1cc;color:#8a6100}
+.badge.annullato{background:#fde2e1;color:#a52a27}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.col{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;min-height:120px}
+.colh{display:flex;justify-content:space-between;border-left:4px solid;padding-left:8px;margin-bottom:10px}
+.appt{border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:8px;background:#fbfcfe}
+.appt .at{margin-bottom:4px}
+.note{font-size:13px;color:var(--muted);font-style:italic;margin-top:4px}
+.row-acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.row-acts select{padding:4px}
+.rowline{padding:8px 0;border-bottom:1px solid var(--line)}
+.todo{padding-left:0;list-style:none;margin:0}
+.todo li{padding:8px 0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:8px;align-items:center}
+.stack{display:flex;flex-direction:column;gap:10px}
+.mat-row{display:flex;gap:6px;margin-bottom:6px}
+.mat-row select{flex:1}
+.mat-row input{width:80px}
+.giro{background:var(--card);border:1px solid var(--line);border-left:5px solid;border-radius:12px;padding:14px;margin-bottom:12px}
+.giro .time{font-size:20px;font-weight:700}
+.giro .links{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.giro .links a{font-size:14px;padding:8px 12px;border:1px solid var(--line);border-radius:8px;color:var(--brand);text-decoration:none;background:#fff}
+.giro .stat{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.bars{display:flex;gap:10px;align-items:flex-end;height:230px}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.bar{width:100%;background:var(--brand);border-radius:6px 6px 0 0;min-height:2px}
+.scan{border:2px solid var(--brand);border-radius:12px;padding:14px;margin-bottom:14px;background:#f4fafe}
+.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
+.login-box{background:#fff;border:1px solid var(--line);border-radius:14px;padding:26px;width:min(400px,100%);display:flex;flex-direction:column;gap:12px}
+.login-box .brand{color:var(--side);margin:0;font-size:26px}
+.err{color:var(--danger);margin:0}
+.hint{background:#f4f6f9;border-radius:8px;padding:10px;font-size:13px;color:var(--muted)}
+#modal{position:fixed;inset:0;background:rgba(10,20,30,.45);display:none;align-items:center;justify-content:center;padding:16px;z-index:10}
+#modal.open{display:flex}
+#modal-box{background:#fff;border-radius:14px;width:min(680px,100%);max-height:90vh;overflow:auto;box-shadow:0 10px 40px rgba(0,0,0,.25)}
+.mh{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line)}
+.mh h3{margin:0}
+.mb{padding:18px}
+.mf{padding:12px 18px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.qr-card{text-align:center}
+#qr-box{display:flex;justify-content:center;margin-bottom:12px}
+#req-fab{position:fixed;right:18px;bottom:18px;z-index:8;background:#e3b64b;color:#0f2b40;font-weight:700;border-radius:99px;padding:12px 18px;box-shadow:0 4px 16px rgba(0,0,0,.25)}
+#req-fab:hover{filter:brightness(1.05)}
+.req{border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px}
+.req .ans{margin-top:8px;padding:8px 10px;border-left:3px solid var(--brand);background:var(--soft);border-radius:6px;font-size:14px}
+@media (max-width:760px){#req-fab{bottom:82px;right:12px;padding:10px 14px;font-size:14px}}
+@media print{#req-fab{display:none}}
+@media (max-width:760px){
+  .app{flex-direction:column}
+  .side{width:100%;padding:10px}
+  .nav{flex-direction:row;overflow-x:auto}
+  .nav button{white-space:nowrap}
+  .logout{margin-top:0}
+  .grid2{grid-template-columns:1fr}
+  main{padding:16px}
+}
+@media print{
+  .side,.top,.kpis,.sec-head,.card:not(.qr-card){display:none!important}
+  .qr-card{box-shadow:none;border:0}
+}
+/* ===== v5: tema chiaro/scuro, layout adattivo (PC, tablet, cellulare) ===== */
+:root{--soft:#f4f6f9;--soft2:#fbfcfe;--input:#fff;--shadow:0 10px 40px rgba(0,0,0,.25)}
+[data-theme="dark"]{--bg:#0e1620;--card:#162331;--text:#e6edf5;--muted:#8fa1b3;--line:#263749;--brand:#3ba3e6;--side:#0a131c;--soft:#1b2b3b;--soft2:#1a2a3a;--input:#0f1b27;--shadow:0 10px 40px rgba(0,0,0,.6)}
+[data-theme="dark"] input,[data-theme="dark"] select,[data-theme="dark"] textarea{background:var(--input);color:var(--text);border-color:var(--line)}
+[data-theme="dark"] button.ghost,[data-theme="dark"] .btn.ghost{background:var(--card);color:var(--text);border-color:var(--line)}
+[data-theme="dark"] .appt,[data-theme="dark"] .giro .links a{background:var(--soft2)}
+[data-theme="dark"] .scan{background:var(--soft2)}
+[data-theme="dark"] .hint{background:var(--soft)}
+[data-theme="dark"] .badge{background:#253a4f;color:#cfe0ef}
+[data-theme="dark"] .badge.completato{background:#133b28;color:#7fd7a4}
+[data-theme="dark"] .badge.programmato{background:#12354f;color:#8cc8f2}
+[data-theme="dark"] .badge.in_corso{background:#4a3a0c;color:#ffd976}
+[data-theme="dark"] .badge.annullato{background:#4a1716;color:#ffaaa7}
+[data-theme="dark"] #modal{background:rgba(0,0,0,.65)}
+[data-theme="dark"] #modal-box,[data-theme="dark"] #auth-box{background:var(--card)}
+[data-theme="dark"] .mh,[data-theme="dark"] .mf{border-color:var(--line)}
+[data-theme="dark"] .login-box{background:var(--card)}
+[data-theme="dark"] .side{border-right:1px solid var(--line)}
+.side .tbtn{background:rgba(255,255,255,.08);color:#fff;text-align:left;display:flex;align-items:center;gap:6px;font-size:14px;padding:9px 12px;border-radius:8px}
+.side .tbtn:hover{background:rgba(255,255,255,.16)}
+.side .clock{font-size:13px;color:#cfe0ef;margin:0 8px}
+.ic{display:inline-block;width:24px;text-align:center}
+.nav button{display:flex;align-items:center;gap:4px}
+.demo-note{font-size:11px;color:#8fa6ba;margin:0 8px;line-height:1.4}
+.greet{background:linear-gradient(135deg,var(--brand),#0f2b40);color:#fff;border-radius:14px;padding:18px 20px;margin-bottom:14px}
+.greet h3{color:#fff;font-size:21px;margin:0 0 4px}
+.greet p{margin:0;opacity:.9;font-size:14px}
+.mhead{display:none}
+.mhead .brand{margin:0;font-size:18px}
+.mhead .clock{font-size:12px;color:#cfe0ef;margin:0}
+.mhead .tbtn{padding:6px 10px;font-size:13px}
+.mhead .tbtn .lbl{display:inline}
+.mhead > div:first-child{display:flex;flex-direction:column}
+.badge{white-space:nowrap}
+@media (min-width:761px) and (max-width:1024px){
+  .side{width:78px;padding:12px 6px;align-items:stretch}
+  .brand,.who,.demo-note,.side .clock,.side .lbl{display:none}
+  .nav button{justify-content:center;padding:10px 4px}
+  .nav .ic{width:auto;font-size:18px}
+  .side .tbtn{justify-content:center;padding:10px 4px}
+  main{padding:18px}
+  .kpis{grid-template-columns:repeat(3,1fr)}
+  .grid2{grid-template-columns:1fr}
+}
+@media (max-width:760px){
+  body{font-size:16px;-webkit-text-size-adjust:100%}
+  .app{display:block}
+  .mhead{display:flex;align-items:center;justify-content:space-between;gap:8px;position:sticky;top:0;z-index:6;background:var(--side);color:#fff;padding:10px 14px}
+  .side{position:fixed;left:0;right:0;bottom:0;top:auto;width:100%;height:68px;flex-direction:row;padding:4px 4px calc(4px + env(safe-area-inset-bottom));gap:0;z-index:6;box-shadow:0 -4px 16px rgba(0,0,0,.18);align-items:stretch}
+  .side .brand,.side .who,.side .demo-note,.side .clock,.side .tbtn,.side .logout-b{display:none}
+  .nav{flex-direction:row;flex:1;overflow-x:auto;gap:2px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .nav::-webkit-scrollbar{display:none}
+  .nav button{flex:0 0 auto;min-width:66px;flex-direction:column;justify-content:center;gap:2px;padding:6px 4px;font-size:11px;text-align:center;border-radius:10px;line-height:1.15}
+  .nav .ic{width:auto;font-size:20px}
+  main{padding:14px 12px 100px}
+  h2{font-size:21px}
+  .sec-head .desc{font-size:13px}
+  .grid2{grid-template-columns:1fr}
+  .kpis{grid-template-columns:1fr 1fr;gap:8px}
+  .kpi{padding:10px}
+  .kpi b{font-size:18px}
+  .greet{padding:14px}
+  .top{flex-direction:column;align-items:stretch}
+  .top .actions,.actions{width:100%}
+  .actions input,.actions select,.top input,.top select{width:100%;min-width:0!important}
+  .actions label{width:100%}
+  .actions label input,.actions label select{width:auto}
+  .actions > button{flex:1 1 auto}
+  .cols{grid-template-columns:1fr}
+  .tbl-wrap table,.tbl-wrap thead,.tbl-wrap tbody,.tbl-wrap tr,.tbl-wrap td,.tbl-wrap th{display:block;width:100%}
+  .tbl-wrap thead{display:none}
+  .tbl-wrap tr{border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin-bottom:10px;background:var(--card)}
+  .tbl-wrap td{border:0;padding:3px 0;text-align:left!important}
+  .tbl-wrap td[data-label]::before{content:attr(data-label);display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .tbl-wrap td.acts{white-space:normal;padding-top:8px}
+  .tbl-wrap td.acts button{margin:4px 6px 0 0;padding:8px 12px}
+  .acts{white-space:normal}
+  .acts button{margin:4px 4px 0 0}
+  .row-acts select{flex:1 1 100%}
+  .row-acts button{flex:1 1 auto}
+  .giro{padding:14px}
+  .giro .time{font-size:18px}
+  .giro .stat{grid-template-columns:1fr 1fr}
+  .giro button{width:100%;padding:12px;font-size:15px}
+  .giro .links a{flex:1 1 auto;text-align:center}
+  .bars{height:190px}
+  .scan input{min-width:0!important;width:100%}
+  #modal{padding:0;align-items:flex-end}
+  #modal-box{width:100%;max-height:92vh;border-radius:18px 18px 0 0}
+  #modal-box .mb{padding:14px}
+  .mf button{flex:1}
+  .mhead{display:flex}
+  html,body{max-width:100%;overflow-x:hidden}
+  main,.giro,.col,.card{min-width:0;max-width:100%}
+  .actions > button.sm,.actions > .btn.sm{flex:0 0 auto}
+  .giro .stat{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .giro .links a{min-width:0;overflow-wrap:anywhere;flex:1 1 100%}
+  .giro .links{flex-direction:column}
+  .giro .links a{text-align:left}
+  .card .actions{max-width:100%}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+</style>
+</head>
+<body>
+<div id="login" class="login" hidden></div>
+<div id="app" class="app" hidden>
+  <header class="mhead">
+    <div><span class="brand">Watergold</span><span class="clock"></span></div>
+    <div class="actions" style="width:auto;flex-direction:row">
+      <button class="tbtn" onclick="toggleTheme()"><span class="ic">🌓</span></button>
+      <button class="tbtn" onclick="logout()"><span class="ic">🚪</span></button>
+    </div>
+  </header>
+  <aside class="side">
+    <div class="brand">Watergold</div>
+    <div id="who" class="who"></div>
+    <div class="clock"></div>
+    <nav class="nav" id="nav"></nav>
+    <button class="tbtn" onclick="toggleTheme()"><span class="ic">🌓</span><span class="lbl tlabel">Tema</span></button>
+    <button class="tbtn logout-b" onclick="logout()"><span class="ic">🚪</span><span class="lbl">Esci</span></button>
+    <div class="demo-note">Versione dimostrativa: comuni e strade reali, clienti e numeri inventati. Dati salvati su questo dispositivo.</div>
+  </aside>
+  <main id="main"></main>
+  <button id="req-fab" onclick="reqForm()">✏️ Chiedi una modifica</button>
+</div>
+<div id="modal" onclick="if(event.target===this)closeModal()"><div id="modal-box"></div></div>
+
+<script>
+const KEY = 'watergold-v6';
+const ME_KEY = 'watergold-v6-me';
+const FILTRI = 'Cambio filtri';
+const STATUS = {programmato:'Programmato', in_corso:'In corso', completato:'Completato', annullato:'Annullato'};
+const MESI = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+const COLORS = ['#0b7bc1','#2e9e5b','#b7791f','#8e44ad','#d64541','#16a085'];
+const DEFAULT_SERVICES = [
+  {name:'Cambio filtri', price:65},
+  {name:'Manutenzione depuratore', price:90},
+  {name:'Riparazione guasto', price:120},
+  {name:'Installazione depuratore', price:250},
+  {name:'Sopralluogo', price:40},
+  {name:'Visita contratto mensile', price:60}
+];
+const SECTIONS = [
+  {id:'dash', t:'Panoramica', roles:['admin'], d:'Riepilogo della giornata: interventi, incassi, scorte da riordinare e automazioni eseguite.'},
+  {id:'pianifica', t:'Pianifica giri', roles:['admin'], d:'Il gestionale prende i clienti con il cambio filtri in scadenza, li raggruppa per vicinanza, assegna un giro a ogni tecnico con il percorso più corto, calcola orari e chilometri e prepara le chiamate. Il calcolo è una proposta: l\'operatrice decide e può cambiare tutto a mano.'},
+  {id:'agenda', t:'Agenda', roles:['admin','tecnico'], d:'Interventi del giorno per tecnico. La segreteria crea e assegna gli appuntamenti; il tecnico vede i propri e aggiorna lo stato.'},
+  {id:'giro', t:'Il mio giro', roles:['admin','tecnico'], d:'Vista da telefono: indirizzi su mappa, chiamata al cliente, stato dell\'intervento, materiali usati, firma del cliente e rapporto stampabile.'},
+  {id:'clienti', t:'Clienti', roles:['admin','tecnico'], d:'Anagrafica di circa 3.000 clienti: ricerca, filtri, scheda con storico. Modifica, importazione e privacy riservate alla segreteria.'},
+  {id:'magazzino', t:'Magazzino', roles:['admin','tecnico'], d:'Giacenze, scanner dei codici articolo per carichi e scarichi rapidi, inventario fisico e ordini suggeriti ai fornitori.'},
+  {id:'promemoria', t:'Promemoria', roles:['admin'], d:'Interventi di domani con il messaggio di promemoria già scritto: un tocco per cliente su WhatsApp.'},
+  {id:'messaggi', t:'Comunicazioni', roles:['admin'], d:'Comunicazioni mensili a tutti i clienti con consenso, con invio guidato e file dei contatti per la lista di trasmissione WhatsApp.'},
+  {id:'fatture', t:'Fatture', roles:['admin'], d:'Fatture per cliente, generazione automatica di fine mese, incassi, stampa ed esportazione per il commercialista.'},
+  {id:'report', t:'Report', roles:['admin'], d:'Andamento del fatturato degli ultimi sei mesi, carico di lavoro dei tecnici e clienti più importanti.'},
+  {id:'automazioni', t:'Automazioni', roles:['admin'], d:'Regole che lavorano da sole (scarichi, fatture, visite, promemoria, scorte, scadenze). Puoi attivarle o disattivarle e leggere il registro.'},
+  {id:'dati', t:'Dati e fogli', roles:['admin'], d:'Esporta ed importa clienti e magazzino in Excel o Google Sheets, con riconoscimento dei duplicati. Backup completo dei dati.'},
+  {id:'qr', t:'QR code', roles:['admin'], d:'Genera il QR code del sito da stampare su biglietti, vetrina o furgone.'},
+  {id:'richieste', t:'Le tue richieste', roles:['admin','tecnico'], d:'Le modifiche chieste al gestionale e il loro stato, con la risposta di chi le ha realizzate. Per chiederne una nuova usa il pulsante giallo "Chiedi una modifica", da qualsiasi pagina.'},
+  {id:'impost', t:'Impostazioni', roles:['admin'], d:'Dati azienda, IVA, servizi e prezzi, modelli di messaggio, utenti e ruoli.'}
+];
+const RULES = [
+  ['scarico','Scarico magazzino automatico','Alla chiusura di un intervento i materiali usati vengono scaricati dal magazzino.'],
+  ['fatturaMese','Fatture di fine mese','Se restano interventi completati non fatturati del mese precedente, crea le fatture per cliente.'],
+  ['visiteMensili','Visite dei contratti','Crea le visite del mese per i clienti con contratto mensile, se non esistono già.'],
+  ['promemoria','Promemoria del giorno prima','Registra quanti promemoria sono pronti per gli interventi di domani.'],
+  ['scorte','Allerta scorte','Registra quanti articoli sono sotto scorta minima.'],
+  ['scaduti','Fatture scadute','Segnala le fatture non incassate da più di 30 giorni.']
+];
+
+const $ = s => document.querySelector(s);
+const val = id => document.getElementById(id).value;
+const chk = id => document.getElementById(id).checked;
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const eur = n => Number(n || 0).toLocaleString('it-IT', {style:'currency', currency:'EUR'});
+const round2 = n => Math.round(n * 100) / 100;
+const pad = (n, w = 2) => String(n).padStart(w, '0');
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const addDays = (n, base = new Date()) => { const d = new Date(base); d.setDate(d.getDate() + n); return ymd(d); };
+const fmtDate = s => { const [y,m,d] = s.split('-'); return `${d}/${m}/${y}`; };
+const fmtLong = s => new Date(s + 'T12:00:00').toLocaleDateString('it-IT', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+const fmtStamp = iso => new Date(iso).toLocaleString('it-IT', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
+const monthOf = s => s.slice(0, 7);
+const mesLabel = ym => { const [y,m] = ym.split('-'); return MESI[+m-1] + ' ' + y; };
+const lastDayOf = ym => { const [y,m] = ym.split('-').map(Number); return ymd(new Date(y, m, 0)); };
+const toMin = t => { const [h,m] = t.split(':').map(Number); return h*60 + m; };
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+const byId = (arr, id) => arr.find(x => x.id === id);
+const digitsOf = p => String(p || '').replace(/\D/g, '');
+const byTime = (a,b) => a.time.localeCompare(b.time);
+const byDateTime = (a,b) => (a.date + a.time).localeCompare(b.date + b.time);
+const yes = v => /^(si|sì|s|yes|1|x|true)$/i.test(String(v ?? '').trim());
+const normH = h => String(h).normalize('NFD').replace(/[̀-ͯ]/g,'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
+const kpi = (label, v, cls = '') => `<div class="kpi ${cls}"><span>${label}</span><b>${v}</b></div>`;
+function csvOf(rows){
+  return '﻿' + rows.map(r => r.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(';')).join('\r\n');
+}
+// Nella pagina pubblicata su claude.ai i file passano dal salvataggio di Claude (chiede conferma);
+// aperta altrove (file sul computer o server) usa il normale download del browser.
+let dlApi = null;
+const dlReady = window.claude && typeof window.claude.use === 'function'
+  ? window.claude.use('downloads').then(x => { dlApi = x; }).catch(() => {})
+  : Promise.resolve();
+async function downloadFile(name, type, content){
+  await dlReady;
+  const blob = content instanceof Blob ? content : new Blob([content], {type});
+  if (dlApi) {
+    try { await dlApi.save({filename: name, data: blob}); }
+    catch (e) {
+      if (e && e.code === 'rate_limited') alert('C\'è già una richiesta di salvataggio aperta: confermala o chiudila e riprova.');
+      else if (e && e.code !== 'declined') alert('Il file non è stato salvato (' + (e.message || e.code || e) + ').');
+    }
+    return;
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+}
+function writeTable(rows, base, fmt){
+  if (fmt === 'xlsx') {
+    if (typeof XLSX === 'undefined') return alert('Libreria Excel non caricata (serve la connessione internet). Usa il formato CSV.');
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'Dati');
+    downloadFile(base + '.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', XLSX.write(wb, {bookType:'xlsx', type:'array'}));
+  } else {
+    downloadFile(base + '.csv', 'text/csv;charset=utf-8', csvOf(rows));
+  }
+}
+// Lettore CSV che rispetta le virgolette e rileva il separatore (; oppure ,)
+function parseCsv(text){
+  text = text.replace(/^﻿/, '');
+  const first = text.split(/\r?\n/)[0] || '';
+  const sep = first.split(';').length >= first.split(',').length ? ';' : ',';
+  const rows = []; let row = [], cur = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (q) {
+      if (ch === '"') { if (text[i+1] === '"') { cur += '"'; i++; } else q = false; }
+      else cur += ch;
+    } else if (ch === '"') q = true;
+    else if (ch === sep) { row.push(cur); cur = ''; }
+    else if (ch === '\n') { row.push(cur); rows.push(row); row = []; cur = ''; }
+    else if (ch !== '\r') cur += ch;
+  }
+  if (cur !== '' || row.length) { row.push(cur); rows.push(row); }
+  return rows.filter(r => r.some(x => String(x).trim() !== ''));
+}
+// Hash semplice per la demo locale. Per la sicurezza reale useremo l'autenticazione del database.
+function hashPw(s){ let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return 'h' + (h >>> 0).toString(16); }
+function rng(seed){
+  return function(){ seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+}
+
+/* ---------- DATI FITTIZI (Palermo, provincia e zona di Mazara del Vallo) ---------- */
+// Strade e comuni reali con coordinate approssimate; nomi, numeri civici, telefoni ed email sono inventati.
+const PA_STREETS = [
+  ['Via della Libertà', 38.1290, 13.3488, '90141', 'Libertà'],
+  ['Via Notarbartolo', 38.1335, 13.3440, '90141', 'Libertà'],
+  ['Via Marchese di Villabianca', 38.1365, 13.3480, '90143', 'Libertà'],
+  ['Via Sciuti', 38.1335, 13.3385, '90144', 'Libertà'],
+  ['Via Dante', 38.1220, 13.3470, '90141', 'Zisa'],
+  ['Via Perpignano', 38.1185, 13.3270, '90135', 'Noce'],
+  ['Via Leonardo da Vinci', 38.1315, 13.3245, '90145', 'Uditore'],
+  ['Viale Michelangelo', 38.1280, 13.3090, '90145', 'Borgo Nuovo'],
+  ['Corso Calatafimi', 38.1040, 13.3350, '90129', 'Calatafimi'],
+  ['Via Pitrè', 38.1010, 13.3170, '90135', 'Pitrè'],
+  ['Via Ernesto Basile', 38.1010, 13.3480, '90128', 'Policlinico'],
+  ['Via Oreto', 38.1000, 13.3590, '90127', 'Oreto'],
+  ['Corso Tukory', 38.1080, 13.3560, '90134', 'Centro storico'],
+  ['Via Maqueda', 38.1150, 13.3615, '90133', 'Centro storico'],
+  ['Corso Vittorio Emanuele', 38.1157, 13.3590, '90134', 'Centro storico'],
+  ['Via Roma', 38.1195, 13.3635, '90133', 'Centro storico'],
+  ['Via Cavour', 38.1215, 13.3600, '90133', 'Politeama'],
+  ['Corso dei Mille', 38.1010, 13.3740, '90123', 'Settecannoli'],
+  ['Via Messina Marine', 38.0985, 13.3900, '90123', 'Romagnolo'],
+  ['Via Sampolo', 38.1400, 13.3530, '90143', 'Sampolo'],
+  ['Via Ammiraglio Rizzo', 38.1435, 13.3570, '90142', 'Acquasanta'],
+  ['Viale Croce Rossa', 38.1460, 13.3420, '90146', 'Resuttana'],
+  ['Viale Strasburgo', 38.1520, 13.3330, '90146', 'San Lorenzo'],
+  ['Via Lanza di Scalea', 38.1600, 13.3170, '90147', 'Tommaso Natale'],
+  ['Viale Margherita di Savoia', 38.1880, 13.3300, '90151', 'Mondello'],
+  ['Via Torretta', 38.2000, 13.2800, '90147', 'Sferracavallo']
+];
+// comune, lat, lng, CAP, peso sul totale clienti, provincia
+const TOWNS = [
+  ['Palermo', 38.1157, 13.3615, '', 38, 'PA'],
+  ['Monreale', 38.0815, 13.2920, '90046', 4, 'PA'],
+  ['Altofonte', 38.0440, 13.2960, '90030', 3, 'PA'],
+  ['Bagheria', 38.0790, 13.5110, '90011', 6, 'PA'],
+  ['Villabate', 38.0785, 13.4420, '90039', 3, 'PA'],
+  ['Ficarazzi', 38.0900, 13.4650, '90010', 2, 'PA'],
+  ['Misilmeri', 38.0330, 13.4500, '90036', 3, 'PA'],
+  ['Belmonte Mezzagna', 38.0450, 13.3880, '90031', 2, 'PA'],
+  ['Carini', 38.1320, 13.1830, '90044', 5, 'PA'],
+  ['Capaci', 38.1710, 13.2390, '90040', 2, 'PA'],
+  ['Isola delle Femmine', 38.1960, 13.2480, '90040', 2, 'PA'],
+  ['Partinico', 38.0470, 13.1150, '90047', 3, 'PA'],
+  ['Termini Imerese', 37.9860, 13.6960, '90018', 3, 'PA'],
+  ['Santa Flavia', 38.0870, 13.5330, '90017', 2, 'PA'],
+  ['Mazara del Vallo', 37.6530, 12.5900, '91026', 13, 'TP'],
+  ['Campobello di Mazara', 37.6350, 12.7460, '91021', 2, 'TP'],
+  ['Marsala', 37.7980, 12.4370, '91025', 4, 'TP'],
+  ['Castelvetrano', 37.6790, 12.7920, '91022', 3, 'TP']
+];
+const TOWN_STREETS = ['Via Roma','Corso Umberto I','Via Vittorio Emanuele','Via Giuseppe Garibaldi','Via Giuseppe Mazzini',
+  'Via Giacomo Matteotti','Via John Kennedy','Via Libertà','Via Papa Giovanni XXIII','Via Nazionale','Via Sicilia','Via Trieste'];
+const round6 = x => Math.round(x * 1e6) / 1e6;
+const addMonths = (s, n) => { const d = new Date(s + 'T12:00:00'); d.setMonth(d.getMonth() + n); return ymd(d); };
+// Riporta sabato e domenica al venerdì precedente
+const weekday = s => { const d = new Date(s + 'T12:00:00'); const w = d.getDay(); if (w === 6) d.setDate(d.getDate() - 1); if (w === 0) d.setDate(d.getDate() - 2); return ymd(d); };
+// Coordinate indicative di un comune noto (per i clienti nuovi senza posizione)
+function geoGuess(city){
+  const t = TOWNS.find(x => x[0].toLowerCase() === String(city || '').trim().toLowerCase());
+  if (!t) return null;
+  return {lat: round6(t[1] + (Math.random() - .5) * .01), lng: round6(t[2] + (Math.random() - .5) * .01)};
+}
+function seed(){
+  const R = rng(20261027);
+  const pick = a => a[Math.floor(R() * a.length)];
+  const int = (a, b) => a + Math.floor(R() * (b - a + 1));
+  const jit = s => (R() - 0.5) * 2 * s;
+  const users = [
+    {id:'u1', name:'Rosalia Ferrante', email:'admin@watergold.demo', role:'admin', phone:'+39 091 0000100', color:'#0f2b40', pass:hashPw('admin123')},
+    {id:'u2', name:'Salvo Messina', email:'salvo@watergold.demo', role:'tecnico', phone:'+39 333 0000001', color:COLORS[0], pass:hashPw('tecnico123')},
+    {id:'u3', name:'Giuseppe La Rosa', email:'giuseppe@watergold.demo', role:'tecnico', phone:'+39 333 0000002', color:COLORS[1], pass:hashPw('tecnico123')},
+    {id:'u4', name:'Antonino Di Maggio', email:'antonino@watergold.demo', role:'tecnico', phone:'+39 333 0000003', color:COLORS[2], pass:hashPw('tecnico123')},
+    {id:'u5', name:'Francesco Caruso', email:'francesco@watergold.demo', role:'tecnico', phone:'+39 333 0000004', color:COLORS[3], pass:hashPw('tecnico123')}
+  ];
+  const techs = users.filter(u => u.role === 'tecnico');
+  const FN = ['Salvatore','Giuseppe','Rosaria','Giovanna','Francesco','Antonino','Maria','Vincenzo','Concetta','Carmela','Benedetto','Rosalia',
+    'Gaetano','Sabrina','Ignazio','Giusy','Fabio','Daniela','Calogero','Valentina','Marco','Federica','Alessandro','Ilenia','Michele','Angela'];
+  const LN = ['Russo','Messina','La Rosa','Di Maggio','Lo Cascio','Caruso','Bruno','Pecoraro','Di Salvo','Vitale','Guarino','Scaduto','Cusimano',
+    'Sciortino','Giammanco','Ferrante','Parisi','Lo Verde','Mangiapane','Lombardo','Marino','Cangemi','Di Liberto','Randazzo','Militello',
+    'Puleo','Tumminello','Genovese','Sanfilippo','Arena','Asaro','Ingrassia','Giacalone','Pipitone'];
+  const items = [
+    {id:'i1', code:'FLT-SED', name:'Cartuccia sedimenti 10" 5 micron', category:'Filtri', unit:'pz', qty:120, min:60, cost:3.2, price:9, supplier:'Fornitore Demo A'},
+    {id:'i2', code:'FLT-CAR', name:'Cartuccia carbone attivo 10"', category:'Filtri', unit:'pz', qty:95, min:60, cost:5.5, price:14, supplier:'Fornitore Demo A'},
+    {id:'i3', code:'FLT-PST', name:'Filtro post-carbon in linea', category:'Filtri', unit:'pz', qty:48, min:40, cost:4.8, price:12, supplier:'Fornitore Demo A'},
+    {id:'i4', code:'MEM-075', name:'Membrana osmosi inversa 75 GPD', category:'Osmosi', unit:'pz', qty:14, min:10, cost:22, price:55, supplier:'Fornitore Demo B'},
+    {id:'i5', code:'UV-011', name:'Lampada UV 11 W', category:'Sterilizzazione', unit:'pz', qty:6, min:8, cost:18, price:45, supplier:'Fornitore Demo B'},
+    {id:'i6', code:'RUB-3V', name:'Rubinetto a 3 vie', category:'Raccorderia', unit:'pz', qty:9, min:5, cost:15, price:35, supplier:'Fornitore Demo C'},
+    {id:'i7', code:'RAC-014', name:'Raccordo rapido 1/4"', category:'Raccorderia', unit:'pz', qty:140, min:80, cost:0.6, price:2, supplier:'Fornitore Demo C'},
+    {id:'i8', code:'TUB-014', name:'Tubo alimentare 1/4"', category:'Tubazioni', unit:'m', qty:210, min:100, cost:0.35, price:1.2, supplier:'Fornitore Demo C'},
+    {id:'i9', code:'CO2-600', name:'Bombola CO2 600 g (gasatore)', category:'Gasatori', unit:'pz', qty:18, min:20, cost:9, price:22, supplier:'Fornitore Demo B'},
+    {id:'i10', code:'POM-BST', name:'Pompa booster 24 V', category:'Pompe', unit:'pz', qty:3, min:3, cost:48, price:110, supplier:'Fornitore Demo B'},
+    {id:'i11', code:'RES-ADD', name:'Resina per addolcitore (L)', category:'Trattamento', unit:'L', qty:60, min:25, cost:3.1, price:6.5, supplier:'Fornitore Demo A'},
+    {id:'i12', code:'GUA-ORG', name:'Kit O-ring per contenitori filtro', category:'Raccorderia', unit:'pz', qty:25, min:30, cost:1.4, price:4, supplier:'Fornitore Demo C'},
+    {id:'i13', code:'KIT-TDS', name:'Tester TDS digitale', category:'Strumenti', unit:'pz', qty:4, min:2, cost:12, price:25, supplier:'Fornitore Demo A'},
+    {id:'i14', code:'FLT-MIN', name:'Cartuccia remineralizzante', category:'Filtri', unit:'pz', qty:33, min:25, cost:6, price:16, supplier:'Fornitore Demo A'}
+  ];
+  const services = DEFAULT_SERVICES.map(s => ({...s}));
+  const filtriPrice = services[0].price;
+  const totW = TOWNS.reduce((s, t) => s + t[4], 0);
+  const pickTown = () => { let r = R() * totW; for (const t of TOWNS) { r -= t[4]; if (r <= 0) return t; } return TOWNS[0]; };
+  const today = ymd(new Date()), monthStart = today.slice(0, 8) + '01';
+  const filtriMats = () => { const m = [{itemId:'i1', qty:1}, {itemId:'i2', qty:1}]; if (R() < .5) m.push({itemId:'i3', qty:1}); if (R() < .3) m.push({itemId:'i14', qty:1}); return m; };
+  // Il tecnico di Mazara segue la provincia di Trapani, gli altri tre l'area di Palermo
+  const techFor = c => c.prov === 'TP' ? techs[3] : techs[int(0, 2)];
+  const clients = [], appointments = [];
+  const addApp = (c, date, status, service, price, mats) => appointments.push({id:'a' + appointments.length, date,
+    time:`${pad(int(8, 16))}:${pick(['00','30'])}`, duration: service === FILTRI ? 30 : pick([60, 90, 120]), clientId:c.id, techId:techFor(c).id,
+    service, price, address:c.address, notes:'', status, materials:mats, stockApplied: status === 'completato'});
+
+  for (let n = 1; n <= 3000; n++) {
+    const tw = pickTown();
+    const az = R() < 0.12;
+    const fn = pick(FN), ln = pick(LN);
+    const name = az ? pick(['Bar ','Studio ','Panificio ','Ristorante ','Farmacia ','Studio dentistico ']) + ln + pick([' Srl',' Snc',' Sas',''])
+      : `${fn} ${ln}`;
+    let street, lat, lng, cap, zona;
+    if (tw[0] === 'Palermo') { const s = pick(PA_STREETS); [street, lat, lng, cap, zona] = [s[0], s[1] + jit(.0035), s[2] + jit(.0035), s[3], s[4]]; }
+    else [street, lat, lng, cap, zona] = [pick(TOWN_STREETS), tw[1] + jit(.007), tw[2] + jit(.007), tw[3], tw[0]];
+    const ft = R() < 0.6 ? 6 : 12;
+    const c = {
+      id:'c' + n, codice:'C' + pad(n, 5), name, type: az ? 'azienda' : 'privato',
+      phone:`+39 3${pick(['20','28','29','31','33','34','38','40','45','47','49','66','71','80','88','92'])} ${int(100, 999)} ${int(1000, 9999)}`,
+      email: az ? `info${n}@example.com` : `${fn.toLowerCase()}.${ln.toLowerCase().replace(/\W/g, '')}${n}@example.com`,
+      address:`${street} ${int(1, 180)}, ${tw[0]}`, cap, city:tw[0], prov:tw[5], zona, lat:round6(lat), lng:round6(lng),
+      filtroMesi:ft, ultimoCambio:'', prossimoCambio:'',
+      vat: az ? String(int(10000000000, 99999999999)) : '', sdi: az ? '0000000' : '', pec: az && R() < 0.5 ? `info${n}@pec.example.com` : '',
+      monthly: R() < 0.03, whatsappOk: R() < 0.7, consentDate:'', notes:''
+    };
+    if (c.whatsappOk) c.consentDate = addDays(-int(1, 700));
+    clients.push(c);
+    // Scadenza del cambio filtri distribuita su tutto l'intervallo del contratto (6 o 12 mesi)
+    const due = weekday(addDays(int(-75, ft * 30 - 76)));
+    if (due < monthStart || (due < today && R() < 0.5)) {
+      addApp(c, due, 'completato', FILTRI, filtriPrice, filtriMats());
+      c.ultimoCambio = due; c.prossimoCambio = addMonths(due, ft);
+    } else {
+      c.ultimoCambio = addMonths(due, -ft); c.prossimoCambio = due;
+      if (due > today && monthOf(due) === monthOf(today) && R() < 0.35) addApp(c, due, 'programmato', FILTRI, filtriPrice, filtriMats());
+    }
+  }
+  // Altri interventi (riparazioni, manutenzioni, installazioni)
+  for (let j = 0; j < 160; j++) {
+    const off = int(-45, 20);
+    const c = pick(clients);
+    const s = pick(services.slice(1, 5));
+    const st = off < 0 ? (R() < 0.92 ? 'completato' : 'annullato') : off === 0 ? pick(['programmato','in_corso','completato']) : 'programmato';
+    const mats = [];
+    for (let m = int(0, 2); m > 0; m--) mats.push({itemId: pick(items).id, qty: int(1, 2)});
+    addApp(c, weekday(addDays(off)), st, s.name, s.price, mats);
+  }
+
+  const data = {v:6, users, clients, items, appointments, invoices:[], movements:[], sentWa:{}, reminders:{}, log:[], lastDaily:'', plan:null,
+    settings:{
+      company:'Watergold', vat:'IT00000000000', address:'Via Ugo La Malfa (sede fittizia), 90146 Palermo', site:'https://watergold.it',
+      vatRate:22, regime:'RF01 - Regime ordinario', sdi:'0000000', pec:'fatture@pec.example.com',
+      depot:{label:'Sede Watergold', lat:38.1440, lng:13.3180},
+      services,
+      rules:{scarico:true, fatturaMese:true, visiteMensili:true, promemoria:true, scorte:true, scaduti:true},
+      waTemplate:'Ciao {nome}, a {mese} abbiamo effettuato {interventi} intervento/i per un totale di {importo}. Per prenotare rispondi a questo messaggio o visita {sito}. Grazie, Watergold',
+      reminderTpl:'Ciao {nome}, ti ricordiamo l\'intervento di domani {data} alle {ora} ({servizio}) con {tecnico}. Per spostarlo rispondi a questo messaggio. Grazie, Watergold',
+      confirmTpl:'Buongiorno {nome}, sono {operatore} di Watergold. È in scadenza il cambio filtri del suo depuratore: il {data} saremo in zona e potremmo passare verso le {ora}. Ci conferma? Basta rispondere SI. Grazie'
+    }};
+  // Fatture storiche: una per cliente e per mese, per i due mesi precedenti
+  const tmp = {items, invoices:[], settings:data.settings};
+  [2, 1].forEach(back => {
+    const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - back);
+    const ym = ymd(d).slice(0, 7);
+    const groups = {};
+    appointments.filter(a => a.status === 'completato' && monthOf(a.date) === ym)
+      .forEach(a => { (groups[a.clientId] = groups[a.clientId] || []).push(a); });
+    Object.entries(groups).forEach(([cid, apps]) => {
+      const inv = createInvoice(cid, apps, lastDayOf(ym), tmp, true);
+      if (R() < 0.75) inv.status = 'pagata';
+    });
+  });
+  data.invoices = tmp.invoices;
+  return data;
+}
+
+/* ---------- STORAGE ---------- */
+function load(){
+  try { const s = localStorage.getItem(KEY); if (s) return JSON.parse(s); } catch(e) {}
+  return seed();
+}
+function save(){
+  try { localStorage.setItem(KEY, JSON.stringify(db)); }
+  catch(e) { alert('Memoria del browser piena: esporta un backup dalla sezione Dati e fogli.'); }
+}
+function commit(){ save(); render(); }
+function logAct(text){
+  db.log.unshift({t:new Date().toISOString(), text});
+  db.log = db.log.slice(0, 300);
+}
+
+/* ---------- ACCESSO E RUOLI ---------- */
+const isAdmin = () => !!me && me.role === 'admin';
+const tecnici = () => db.users.filter(u => u.role === 'tecnico');
+function requireAdmin(){
+  if (isAdmin()) return true;
+  alert('Operazione riservata alla segreteria.');
+  return false;
+}
+function showLogin(err = ''){
+  $('#app').hidden = true;
+  $('#login').hidden = false;
+  $('#login').innerHTML = `<div class="login-box">
+    <div class="brand">Watergold</div>
+    <h2 style="margin:0">Accesso al gestionale</h2>
+    <p class="muted small" style="margin:0">Dati fittizi di dimostrazione.</p>
+    ${err ? `<p class="err">${esc(err)}</p>` : ''}
+    <label>Email<input id="l-email" type="email" autocomplete="username"></label>
+    <label>Password<input id="l-pass" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()"></label>
+    <button class="big" onclick="login()">Entra</button>
+    <div class="hint"><b>Titolare / segreteria:</b> admin@watergold.demo · admin123<br>
+    <b>Tecnico:</b> salvo@watergold.demo · tecnico123 (anche giuseppe@, antonino@ e francesco@watergold.demo)</div>
+  </div>`;
+}
+function login(){
+  const e = val('l-email').trim().toLowerCase(), p = val('l-pass');
+  const u = db.users.find(x => x.email === e && x.pass === hashPw(p));
+  if (!u) return showLogin('Email o password non corrette.');
+  localStorage.setItem(ME_KEY, u.id);
+  boot();
+}
+function logout(){
+  localStorage.removeItem(ME_KEY);
+  me = null;
+  showLogin();
+}
+function boot(){
+  me = db.users.find(u => u.id === localStorage.getItem(ME_KEY)) || null;
+  if (!me) return showLogin();
+  $('#login').hidden = true;
+  $('#app').hidden = false;
+  runDaily(false);
+  view = isAdmin() ? 'dash' : 'giro';
+  renderShell();
+}
+
+/* ---------- SHELL E NAVIGAZIONE ---------- */
+let me = null;
+let view = 'dash';
+let ui = {
+  agDate: ymd(new Date()), agTech: 'all', cq: '', cf: 'all', cPage: 0, stockQ: '',
+  invMonth: ymd(new Date()).slice(0,7), waMonth: ymd(new Date()).slice(0,7), waOnly: false, waHideSent: true,
+  giroTech: null, giroDate: ymd(new Date()), giroZona: false, scanned: null, cCity: 'all', pl: null, plDay: 0, plAuto: false, plTech: 'all', plView: null
+};
+let pendingPlan = null;
+const VIEWS = {dash:viewDash, pianifica:viewPianifica, agenda:viewAgenda, giro:viewGiro, clienti:viewClienti, magazzino:viewMagazzino,
+  promemoria:viewPromemoria, messaggi:viewWa, fatture:viewFatture, report:viewReport, automazioni:viewAuto,
+  dati:viewDati, qr:viewQr, richieste:viewRichieste, impost:viewSettings};
+function renderShell(){
+  $('#who').innerHTML = `<b>${esc(me.name)}</b><br>${isAdmin() ? 'Titolare / segreteria' : 'Tecnico'}`;
+  const secs = SECTIONS.filter(s => s.roles.includes(me.role));
+  if (!secs.some(s => s.id === view)) view = secs[0].id;
+  $('#nav').innerHTML = secs.map(s => `<button data-v="${s.id}" onclick="go('${s.id}')"><span class="ic">${ICONS[s.id]}</span><span class="lbl">${s.t}</span></button>`).join('');
+  render();
+}
+function go(v){ view = v; render(); window.scrollTo(0,0); }
+function render(){
+  if (!me) return;
+  document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.v === view));
+  const sec = SECTIONS.find(s => s.id === view);
+  $('#main').innerHTML = `<div class="sec-head"><h2>${sec.t}</h2><p class="desc">${sec.d}</p></div>` + VIEWS[view]();
+  if (view === 'clienti') drawClients();
+  if (view === 'magazzino') drawStock();
+  if (view === 'qr') makeQr();
+  if (view === 'pianifica') drawPlanMap(); else if (plMapObj) { plMapObj.remove(); plMapObj = null; }
+  if (view === 'magazzino' && ui.scanned) setTimeout(() => { const s = document.getElementById('scan'); if (s) s.focus(); }, 0);
+}
+function modal(title, body, footer = ''){
+  $('#modal-box').innerHTML = `<div class="mh"><h3>${title}</h3><button class="ghost sm" onclick="closeModal()">✕</button></div>
+    <div class="mb">${body}</div>${footer ? `<div class="mf">${footer}</div>` : ''}`;
+  $('#modal').classList.add('open');
+}
+function closeModal(){ $('#modal').classList.remove('open'); }
+
+/* ---------- LOGICA DI BUSINESS ---------- */
+function isInvoiced(aid){ return db.invoices.some(i => i.apptIds.includes(aid)); }
+function pendingAppts(ym){
+  return db.appointments.filter(a => a.status === 'completato' && monthOf(a.date) === ym && !isInvoiced(a.id));
+}
+function completedIn(cid, ym){
+  return db.appointments.filter(a => a.clientId === cid && a.status === 'completato' && monthOf(a.date) === ym);
+}
+function appTotal(a){
+  return round2(a.price + (a.materials || []).reduce((s,m) => { const it = byId(db.items, m.itemId); return s + (it ? it.price * m.qty : 0); }, 0));
+}
+const cname = id => (byId(db.clients, id) || {name:'—'}).name;
+const tname = id => (byId(db.users, id) || {name:'—'}).name;
+const cityOf = a => (byId(db.clients, a.clientId) || {city:''}).city;
+function statusOpts(s){ return Object.entries(STATUS).map(([k,v]) => `<option value="${k}" ${k === s ? 'selected' : ''}>${v}</option>`).join(''); }
+// Scarica i materiali dal magazzino una sola volta, alla chiusura dell'intervento
+function applyStock(a){
+  if (a.status !== 'completato' || a.stockApplied || !db.settings.rules.scarico) return;
+  (a.materials || []).forEach(m => moveStock(m.itemId, 'scarico', m.qty, `Intervento ${fmtDate(a.date)} - ${cname(a.clientId)}`, true));
+  a.stockApplied = true;
+}
+// Movimento di magazzino (carico o scarico); con silent=true non fa commit
+function moveStock(itemId, type, qty, note, silent = false){
+  const it = byId(db.items, itemId);
+  if (!it) return;
+  const delta = type === 'carico' ? qty : -qty;
+  it.qty = round2(it.qty + delta);
+  db.movements.push({id:uid(), date:ymd(new Date()), itemId, qty:delta, type, note: note || ''});
+  if (!silent) commit();
+}
+// Ricalcola il magazzino quando si cambiano i materiali di un intervento già scaricato
+function adjustStock(a, oldMats, newMats){
+  if (!a.stockApplied) return;
+  const ids = new Set([...oldMats, ...newMats].map(m => m.itemId));
+  ids.forEach(id => {
+    const o = oldMats.filter(m => m.itemId === id).reduce((s,m) => s + m.qty, 0);
+    const n = newMats.filter(m => m.itemId === id).reduce((s,m) => s + m.qty, 0);
+    if (o !== n) moveStock(id, o > n ? 'carico' : 'scarico', Math.abs(o - n), 'Rettifica materiali intervento', true);
+  });
+}
+function nextNumber(date, dbx = db){
+  const y = date.slice(0,4);
+  const max = dbx.invoices.filter(i => i.number.startsWith(y + '/')).reduce((m,i) => Math.max(m, +i.number.split('/')[1]), 0);
+  return y + '/' + pad(max + 1, 4);
+}
+function createInvoice(cid, apps, date = ymd(new Date()), dbx = db, quiet = false){
+  const lines = [];
+  apps.forEach(a => {
+    lines.push({desc:`${a.service} - ${fmtDate(a.date)}${a.address ? ' - ' + a.address : ''}`, qty:1, price:a.price});
+    (a.materials || []).forEach(m => {
+      const it = byId(dbx.items, m.itemId);
+      if (it) lines.push({desc:`Materiale: ${it.name}`, qty:m.qty, price:it.price});
+    });
+  });
+  const imponibile = round2(lines.reduce((s,l) => s + l.qty * l.price, 0));
+  const rate = dbx.settings.vatRate;
+  const inv = {id:uid(), number:nextNumber(date, dbx), date, clientId:cid, lines, imponibile, ivaRate:rate,
+    totale:round2(imponibile * (1 + rate / 100)), status:'da incassare', apptIds:apps.map(a => a.id)};
+  dbx.invoices.push(inv);
+  return inv;
+}
+function reorderList(){
+  return db.items.filter(i => i.qty <= i.min).map(i => ({...i, daOrdinare: Math.max(round2(i.min * 2 - i.qty), 1)}));
+}
+function maxCode(){
+  return db.clients.reduce((m, c) => Math.max(m, +String(c.codice).replace(/\D/g,'') || 0), 0);
+}
+// Crea le visite dei contratti del mese; ritorna quante ne ha create
+function genMonthlyVisits(ym){
+  const techs = tecnici();
+  if (!techs.length) return 0;
+  const svc = db.settings.services.find(s => s.name === 'Visita contratto mensile') || db.settings.services[db.settings.services.length - 1];
+  let n = 0;
+  db.clients.filter(c => c.monthly).forEach((c, idx) => {
+    if (db.appointments.some(a => a.clientId === c.id && monthOf(a.date) === ym && a.service === svc.name)) return;
+    db.appointments.push({id:uid(), date:`${ym}-15`, time:'09:00', duration:60, clientId:c.id, techId:techs[idx % techs.length].id,
+      service:svc.name, price:svc.price, address:c.address, notes:'Visita contratto mensile: da confermare con il cliente',
+      status:'programmato', materials:[], stockApplied:false});
+    n++;
+  });
+  return n;
+}
+// Crea le fatture per cliente degli interventi completati del mese; ritorna quante ne ha create
+function autoInvoice(ym){
+  const pend = pendingAppts(ym);
+  if (!pend.length) return 0;
+  const groups = {};
+  pend.forEach(a => { (groups[a.clientId] = groups[a.clientId] || []).push(a); });
+  const today = ymd(new Date());
+  const date = ym === today.slice(0,7) ? today : lastDayOf(ym);
+  Object.entries(groups).forEach(([cid, apps]) => createInvoice(cid, apps, date));
+  return Object.keys(groups).length;
+}
+// Automazioni giornaliere: eseguite una volta al giorno all'accesso, oppure forzate dal pulsante
+function runDaily(force){
+  const today = ymd(new Date());
+  if (!force && db.lastDaily === today) return;
+  const r = db.settings.rules;
+  const ym = today.slice(0,7);
+  const prev = ymd(new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1)).slice(0,7);
+  if (r.visiteMensili) { const n = genMonthlyVisits(ym); if (n) logAct(`Create ${n} visite dei contratti per ${mesLabel(ym)}`); }
+  if (r.fatturaMese) { const n = autoInvoice(prev); if (n) logAct(`Create ${n} fatture di ${mesLabel(prev)}`); }
+  if (r.promemoria) { const n = db.appointments.filter(a => a.date === addDays(1) && a.status === 'programmato').length; if (n) logAct(`${n} promemoria pronti per domani`); }
+  if (r.scorte) { const n = reorderList().length; if (n) logAct(`${n} articoli sotto scorta da riordinare`); }
+  if (r.scaduti) { const lim = addDays(-30); const n = db.invoices.filter(i => i.status === 'da incassare' && i.date < lim).length; if (n) logAct(`${n} fatture non incassate da oltre 30 giorni`); }
+  logAct('Automazioni giornaliere eseguite');
+  db.lastDaily = today;
+  save();
+}
+function setRule(key, v){ db.settings.rules[key] = v; commit(); }
+function runNow(){ runDaily(true); commit(); alert('Automazioni eseguite. Vedi il registro.'); }
+
+/* ---------- PANORAMICA ---------- */
+function viewDash(){
+  const t = ymd(new Date()), ym = t.slice(0,7);
+  const today = db.appointments.filter(a => a.date === t);
+  const fat = db.invoices.filter(i => monthOf(i.date) === ym).reduce((s,i) => s + i.imponibile, 0);
+  const aperte = db.invoices.filter(i => i.status === 'da incassare').reduce((s,i) => s + i.totale, 0);
+  const ord = reorderList();
+  const nf = pendingAppts(ym).length;
+  const visite = db.clients.filter(c => c.monthly).length;
+  const visiteFatte = db.clients.filter(c => c.monthly && db.appointments.some(a => a.clientId === c.id && monthOf(a.date) === ym && a.status === 'completato')).length;
+  const daProg = daProgrammare(ym, true).length;
+  const upcoming = db.appointments.filter(a => a.date >= t && (a.status === 'programmato' || a.status === 'in_corso')).sort(byDateTime).slice(0,6);
+  return `
+  <div class="greet">
+    <h3>${saluto()}, ${esc(me.name.split(' ')[0])}</h3>
+    <p>${fmtLong(t)} · ${today.length} interventi oggi · ${ord.length} articoli da riordinare · ${nf} completati da fatturare</p>
+  </div>
+  <div class="kpis">
+    ${kpi('Interventi oggi', today.length)}
+    ${kpi('Cambi filtri da programmare', daProg, daProg ? 'warn' : '')}
+    ${kpi('Fatturato del mese (imponibile)', eur(fat))}
+    ${kpi('Da incassare', eur(aperte))}
+    ${kpi('Articoli da riordinare', ord.length, ord.length ? 'warn' : '')}
+    ${kpi('Completati da fatturare', nf, nf ? 'warn' : '')}
+    ${kpi('Contratti mensili svolti', `${visiteFatte}/${visite}`)}
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>Prossimi interventi</h3>
+      ${upcoming.map(a => `<div class="rowline"><b>${fmtDate(a.date)} ${a.time}</b> ${esc(cname(a.clientId))}<span class="muted"> · ${esc(a.service)} · ${esc(tname(a.techId))}</span></div>`).join('') || '<p class="muted">Nessun intervento in programma</p>'}
+    </div>
+    <div class="card"><h3>Da fare</h3>
+      <ul class="todo">
+        <li><span>${daProg} cambi filtri da programmare (mese e arretrati)</span><button class="ghost sm" onclick="go('pianifica')">Pianifica</button></li>
+        <li><span>${ord.length ? 'Riordinare ' + ord.length + ' articoli' : 'Nessun articolo da riordinare'}</span><button class="ghost sm" onclick="go('magazzino')">Vai</button></li>
+        <li><span>${nf} interventi completati da fatturare</span><button class="ghost sm" onclick="go('fatture')">Vai</button></li>
+        <li><span>Promemoria per gli interventi di domani</span><button class="ghost sm" onclick="go('promemoria')">Vai</button></li>
+        <li><span>Comunicazioni mensili ai clienti</span><button class="ghost sm" onclick="go('messaggi')">Vai</button></li>
+      </ul>
+    </div>
+  </div>
+  <div class="card"><h3>Ultime attività automatiche</h3>
+    ${db.log.slice(0,8).map(l => `<div class="rowline small"><span class="muted">${fmtStamp(l.t)}</span> · ${esc(l.text)}</div>`).join('') || '<p class="muted">Nessuna attività registrata</p>'}
+  </div>`;
+}
+
+/* ---------- AGENDA ---------- */
+function viewAgenda(){
+  const day = ui.agDate;
+  const techs = isAdmin() ? (ui.agTech === 'all' ? tecnici() : tecnici().filter(t => t.id === ui.agTech)) : [me];
+  const apps = db.appointments.filter(a => a.date === day && (isAdmin() || a.techId === me.id));
+  return `
+  <div class="top">
+    <div class="actions">
+      <button class="ghost" onclick="moveDay(-1)">◀</button>
+      <input type="date" value="${day}" onchange="ui.agDate=this.value;render()">
+      <button class="ghost" onclick="moveDay(1)">▶</button>
+      <button class="ghost" onclick="ui.agDate=ymd(new Date());render()">Oggi</button>
+      ${isAdmin() ? `<select onchange="ui.agTech=this.value;render()"><option value="all">Tutti i tecnici</option>
+        ${tecnici().map(t => `<option value="${t.id}" ${ui.agTech === t.id ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select>` : ''}
+    </div>
+    ${isAdmin() ? `<div class="actions"><button onclick="appForm({date:'${day}'})">+ Nuovo appuntamento</button></div>` : ''}
+  </div>
+  <p class="muted">${fmtLong(day)} · ${apps.length} interventi</p>
+  <div class="cols">
+    ${techs.map(t => {
+      const list = apps.filter(a => a.techId === t.id).sort(byTime);
+      return `<div class="col">
+        <div class="colh" style="border-color:${t.color}"><b>${esc(t.name)}</b><span class="muted">${list.length} interventi</span></div>
+        ${list.map(apptCard).join('') || '<p class="muted empty">Nessun intervento</p>'}
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+function apptCard(a){
+  const c = byId(db.clients, a.clientId) || {name:'—', address:'', codice:''};
+  const adm = isAdmin();
+  return `<div class="appt">
+    <div class="at"><b>${a.time}</b> <span class="muted">${a.duration} min</span> <span class="badge ${a.status}">${STATUS[a.status]}</span>${a.signature ? ' <span class="badge completato">Firmato</span>' : ''}</div>
+    <div><b>${esc(c.name)}</b> <small class="muted">${esc(c.codice)}</small></div>
+    <div class="muted">${esc(a.service)} · ${esc(a.address || c.address)}</div>
+    ${a.notes ? `<div class="note">${esc(a.notes)}</div>` : ''}
+    <div class="row-acts">
+      <select onchange="setStatus('${a.id}',this.value)">${statusOpts(a.status)}</select>
+      ${adm ? `<button class="ghost sm" onclick="appForm(null,'${a.id}')">Modifica</button>` : `<button class="ghost sm" onclick="matsForm('${a.id}')">Materiali</button>`}
+      ${adm && a.status === 'completato' && !isInvoiced(a.id) ? `<button class="ok sm" onclick="invoiceOne('${a.id}')">Fattura</button>` : ''}
+      ${adm ? `<button class="danger sm" onclick="delAppt('${a.id}')">✕</button>` : ''}
+    </div>
+  </div>`;
+}
+function moveDay(n){ ui.agDate = addDays(n, new Date(ui.agDate + 'T12:00:00')); render(); }
+function setStatus(id, st){
+  const a = byId(db.appointments, id);
+  a.status = st;
+  applyStock(a);
+  applyFiltri(a);
+  logAct(`Intervento ${fmtDate(a.date)} ${a.time} (${cname(a.clientId)}): ${STATUS[st]}`);
+  commit();
+}
+function matRow(m = {}){
+  return `<div class="mat-row">
+    <select>${db.items.map(i => `<option value="${i.id}" ${i.id === m.itemId ? 'selected' : ''}>${esc(i.name)}</option>`).join('')}</select>
+    <input type="number" min="0" step="0.5" value="${m.qty || 1}">
+    <button class="ghost sm" type="button" onclick="this.parentElement.remove()">✕</button>
+  </div>`;
+}
+function addMat(){ document.getElementById('mats').insertAdjacentHTML('beforeend', matRow()); }
+function readMats(){
+  return [...document.querySelectorAll('.mat-row')]
+    .map(r => ({itemId: r.querySelector('select').value, qty: +r.querySelector('input').value}))
+    .filter(m => m.itemId && m.qty > 0);
+}
+function matsForm(id){
+  const a = byId(db.appointments, id);
+  modal('Materiali usati', `<p class="muted small">${a.stockApplied ? 'Lo scarico è già avvenuto: le modifiche rettificano il magazzino.' : 'Lo scarico avverrà alla chiusura dell\'intervento.'}</p>
+    <div id="mats">${(a.materials || []).map(m => matRow(m)).join('')}</div>
+    <button class="ghost sm" type="button" onclick="addMat()">+ Materiale</button>`,
+    `<button class="ghost" onclick="closeModal()">Annulla</button><button onclick="saveMats('${id}')">Salva</button>`);
+}
+function saveMats(id){
+  const a = byId(db.appointments, id);
+  const nuovi = readMats();
+  adjustStock(a, a.materials || [], nuovi);
+  a.materials = nuovi;
+  closeModal();
+  commit();
+}
+function appForm(pre = {}, id){
+  if (!requireAdmin()) return;
+  const a = id ? byId(db.appointments, id) : {date:pre.date || ymd(new Date()), time:'09:00', duration:60, clientId:'', techId:tecnici()[0].id, service:db.settings.services[0].name, price:db.settings.services[0].price, address:'', notes:'', status:'programmato', materials:[]};
+  modal(id ? 'Modifica appuntamento' : 'Nuovo appuntamento', `
+    <div class="grid2">
+      <label>Data<input type="date" id="f-date" value="${a.date}"></label>
+      <label>Ora<input type="time" id="f-time" value="${a.time}"></label>
+      <label>Durata (minuti)<input type="number" id="f-dur" step="15" value="${a.duration}"></label>
+      <label>Tecnico<select id="f-tech">${tecnici().map(t => `<option value="${t.id}" ${t.id === a.techId ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select></label>
+      <label class="full">Cliente<input id="f-client" list="f-client-list" value="${esc(id ? cname(a.clientId) + ' · ' + (byId(db.clients, a.clientId)||{}).codice : '')}" placeholder="Scrivi nome o codice cliente" oninput="pickClient(this.value)"></label>
+      <datalist id="f-client-list" style="display:none"></datalist>
+      <input type="hidden" id="f-clientid" value="${esc(a.clientId)}">
+      <label>Servizio<select id="f-service" onchange="document.getElementById('f-price').value=this.selectedOptions[0].dataset.price">${db.settings.services.map(s => `<option value="${esc(s.name)}" data-price="${s.price}" ${s.name === a.service ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></label>
+      <label>Prezzo manodopera (€)<input type="number" step="0.01" id="f-price" value="${a.price}"></label>
+      <label class="full">Indirizzo intervento<input id="f-address" value="${esc(a.address)}"></label>
+      <label>Stato<select id="f-status">${statusOpts(a.status)}</select></label>
+      <label class="full">Note<textarea id="f-notes">${esc(a.notes)}</textarea></label>
+      <div class="full"><b>Materiali utilizzati</b>
+        <div id="mats">${(a.materials || []).map(m => matRow(m)).join('')}</div>
+        <button class="ghost sm" type="button" onclick="addMat()">+ Materiale</button>
+      </div>
+    </div>`,
+    `<button class="ghost" onclick="closeModal()">Annulla</button><button onclick="saveAppt('${id || ''}')">Salva</button>`);
+}
+// Cerca il cliente per nome o codice mentre si digita
+function pickClient(text){
+  const q = text.toLowerCase().split(' · ')[0].trim();
+  const hit = db.clients.find(c => c.name.toLowerCase() === q || c.codice.toLowerCase() === q);
+  document.getElementById('f-clientid').value = hit ? hit.id : '';
+  if (hit) document.getElementById('f-address').value = hit.address;
+}
+function saveAppt(id){
+  if (!requireAdmin()) return;
+  const a = {
+    date: val('f-date'), time: val('f-time'), duration: +val('f-dur') || 60,
+    clientId: val('f-clientid'), techId: val('f-tech'), service: val('f-service'), price: +val('f-price') || 0,
+    address: val('f-address').trim(), notes: val('f-notes').trim(), status: val('f-status'), materials: readMats()
+  };
+  if (!a.date || !a.time || !a.clientId) return alert('Compila data, ora e cliente (scegli un cliente dall\'elenco).');
+  const start = toMin(a.time), end = start + a.duration;
+  const clash = db.appointments.find(x => x.id !== id && x.date === a.date && x.techId === a.techId && x.status !== 'annullato' && toMin(x.time) < end && toMin(x.time) + x.duration > start);
+  if (clash && !confirm(`Il tecnico ha già un intervento alle ${clash.time}. Salvare comunque?`)) return;
+  let x;
+  if (id) {
+    x = byId(db.appointments, id);
+    const oldMats = x.materials || [];
+    Object.assign(x, a);
+    adjustStock(x, oldMats, a.materials);
+  } else {
+    x = {id:uid(), ...a, stockApplied:false};
+    db.appointments.push(x);
+  }
+  applyStock(x);
+  applyFiltri(x);
+  closeModal();
+  commit();
+}
+function delAppt(id){
+  if (!requireAdmin()) return;
+  if (!confirm('Eliminare questo appuntamento?')) return;
+  db.appointments = db.appointments.filter(a => a.id !== id);
+  commit();
+}
+function invoiceOne(aid){
+  if (!requireAdmin()) return;
+  const a = byId(db.appointments, aid);
+  createInvoice(a.clientId, [a]);
+  commit();
+}
+function moveDayGiro(n){ ui.giroDate = addDays(n, new Date(ui.giroDate + 'T12:00:00')); render(); }
+
+/* ---------- PIANIFICA GIRI (cambio filtri) ---------- */
+// Distanze in linea d'aria corrette per la strada; tempi di guida più lenti in città
+const hav = (a, b) => {
+  const toR = x => x * Math.PI / 180;
+  const dLa = toR(b.lat - a.lat), dLo = toR(b.lng - a.lng);
+  const h = Math.sin(dLa / 2) ** 2 + Math.cos(toR(a.lat)) * Math.cos(toR(b.lat)) * Math.sin(dLo / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.sqrt(h));
+};
+const roadKm = (a, b) => hav(a, b) * 1.35;
+const driveMin = km => km <= 4 ? km / 20 * 60 : 12 + (km - 4) / 55 * 60;
+const fmtKm = km => km < 1 ? Math.max(50, Math.round(km * 20) * 50) + ' m' : km.toFixed(1).replace('.', ',') + ' km';
+const minToT = m => { const r = Math.round(m); return pad(Math.floor(r / 60)) + ':' + pad(r % 60); };
+const nextWorkday = s => { const d = new Date(s + 'T12:00:00'); do d.setDate(d.getDate() + 1); while (d.getDay() === 0 || d.getDay() === 6); return ymd(d); };
+const CALL = {da_chiamare:['Da chiamare',''], confermato:['Confermato','completato'], non_risponde:['Non risponde','annullato'], rimanda:['Vuole rimandare','in_corso']};
+const isOut = s => s.call === 'non_risponde' || s.call === 'rimanda';
+
+function openFiltriSet(){
+  return new Set(db.appointments.filter(a => a.service === FILTRI && (a.status === 'programmato' || a.status === 'in_corso')).map(a => a.clientId));
+}
+// Clienti con il cambio filtri in scadenza nel mese (e arretrati) non ancora messi in agenda
+function daProgrammare(ym, arretrati){
+  const open = openFiltriSet(), end = lastDayOf(ym), start = ym + '-01';
+  return db.clients.filter(c => c.prossimoCambio && c.lat && c.prossimoCambio <= end && (arretrati || c.prossimoCambio >= start) && !open.has(c.id));
+}
+function inPlanSet(){
+  const s = new Set();
+  if (db.plan) db.plan.days.forEach(d => d.routes.forEach(r => r.stops.forEach(x => s.add(x.cid))));
+  return s;
+}
+// Clienti liberi per sostituzioni e aggiunte: anche quelli del mese dopo, da anticipare
+function plCandidates(){
+  const p = db.plan, inP = inPlanSet();
+  return daProgrammare(addMonths(p.month + '-01', 1).slice(0, 7), true).filter(c => p.cities.includes(c.city) && !inP.has(c.id));
+}
+const anticipo = c => db.plan && c.prossimoCambio > lastDayOf(db.plan.month) ? ' <span class="badge">da anticipare</span>' : '';
+function defaultPl(){
+  return {month: ymd(new Date()).slice(0, 7), arretrati: true, cities: ['Palermo'], date: nextWorkday(ymd(new Date())),
+    techs: tecnici().map(t => t.id), perTech: 9, start: '08:30', dur: 30};
+}
+
+// Divide i clienti in gruppi vicini tra loro, ognuno al massimo di "cap" interventi
+function balancedClusters(pts, k, cap){
+  if (k <= 1) return [pts.slice()];
+  const mid = {lat: pts.reduce((s, p) => s + p.lat, 0) / pts.length, lng: pts.reduce((s, p) => s + p.lng, 0) / pts.length};
+  let first = pts[0];
+  pts.forEach(p => { if (hav(mid, p) > hav(mid, first)) first = p; });
+  const centers = [{lat: first.lat, lng: first.lng}];
+  while (centers.length < k) {
+    let best = pts[0], bd = -1;
+    pts.forEach(p => { const d = Math.min(...centers.map(c => hav(c, p))); if (d > bd) { bd = d; best = p; } });
+    centers.push({lat: best.lat, lng: best.lng});
+  }
+  let groups = [];
+  for (let it = 0; it < 15; it++) {
+    groups = centers.map(() => []);
+    // prima i clienti con la scelta più netta, poi gli altri dove c'è ancora posto
+    pts.map(p => {
+      const ds = centers.map(c => hav(c, p));
+      const s = [...ds].sort((a, b) => a - b);
+      return {p, ds, regret: (s[1] ?? 0) - s[0]};
+    }).sort((a, b) => b.regret - a.regret).forEach(({p, ds}) => {
+      const idx = ds.map((d, i) => i).sort((a, b) => ds[a] - ds[b]).find(i => groups[i].length < cap);
+      groups[idx].push(p);
+    });
+    groups.forEach((g, i) => { if (g.length) centers[i] = {lat: g.reduce((s, p) => s + p.lat, 0) / g.length, lng: g.reduce((s, p) => s + p.lng, 0) / g.length}; });
+  }
+  return groups.filter(g => g.length);
+}
+// Percorso più corto: cliente più vicino via via, poi miglioramento a coppie (2-opt)
+function orderRoute(list, start){
+  const rest = list.slice(), out = [];
+  let cur = start;
+  while (rest.length) {
+    let bi = 0;
+    rest.forEach((p, i) => { if (hav(cur, p) < hav(cur, rest[bi])) bi = i; });
+    cur = rest.splice(bi, 1)[0];
+    out.push(cur);
+  }
+  const path = [start, ...out];
+  let improved = true, guard = 0;
+  while (improved && guard++ < 60) {
+    improved = false;
+    for (let i = 1; i < path.length - 1; i++) for (let j = i + 1; j < path.length; j++) {
+      const a = path[i - 1], b = path[i], c = path[j], d = path[j + 1];
+      if (hav(a, c) + (d ? hav(b, d) : 0) + 1e-9 < hav(a, b) + (d ? hav(c, d) : 0)) {
+        path.splice(i, j - i + 1, ...path.slice(i, j + 1).reverse());
+        improved = true;
+      }
+    }
+  }
+  return path.slice(1);
+}
+// Orari e chilometri di un giro; se la zona è lontana dalla sede si parte dal primo cliente
+function routeInfo(r){
+  const p = db.plan, dep = db.settings.depot;
+  let t = toMin(p.start), km = 0, prev = dep, remote = false;
+  const rows = r.stops.filter(s => !isOut(s)).map((s, i) => {
+    const c = byId(db.clients, s.cid);
+    let leg = roadKm(prev, c);
+    if (i === 0 && leg > 30) { remote = true; leg = 0; }
+    t = Math.ceil((t + driveMin(leg)) / 5) * 5;
+    km += leg;
+    const row = {s, c, leg, eta: t};
+    t += +p.dur;
+    prev = c;
+    return row;
+  });
+  return {rows, km, end: t, remote};
+}
+function planGiri(){
+  if (!requireAdmin()) return;
+  const p = ui.pl;
+  const techs = p.techs.map(id => byId(db.users, id)).filter(Boolean);
+  if (!techs.length) return alert('Scegli almeno un tecnico.');
+  if (!p.cities.length) return alert('Scegli almeno un comune.');
+  const pts = daProgrammare(p.month, p.arretrati).filter(c => p.cities.includes(c.city));
+  if (!pts.length) return alert('Nessun cliente da programmare con questi filtri.');
+  if (db.plan && db.plan.days.some(d => d.routes.some(r => r.stops.some(s => s.call !== 'da_chiamare' && !s.apptId))) &&
+    !confirm('Il piano attuale ha chiamate già registrate e non ancora messe in agenda. Sostituirlo con un nuovo calcolo?')) return;
+  const cap = Math.max(1, +p.perTech || 9);
+  const dep = db.settings.depot;
+  const groups = balancedClusters(pts, Math.ceil(pts.length / cap), cap)
+    .map(g => orderRoute(g, dep))
+    // prima i gruppi con i clienti più in ritardo
+    .sort((a, b) => a.reduce((m, c) => c.prossimoCambio < m ? c.prossimoCambio : m, '9999').localeCompare(b.reduce((m, c) => c.prossimoCambio < m ? c.prossimoCambio : m, '9999')));
+  const days = [];
+  let d = p.date;
+  for (let i = 0; i < groups.length; i += techs.length) {
+    days.push({date: d, routes: groups.slice(i, i + techs.length).map((g, j) => ({techId: techs[j].id, stops: g.map(c => ({cid: c.id, call: 'da_chiamare', tries: 0}))}))});
+    d = nextWorkday(d);
+  }
+  db.plan = {created: new Date().toISOString(), month: p.month, arretrati: p.arretrati, cities: [...p.cities], start: p.start, dur: +p.dur || 30, days};
+  ui.plDay = 0;
+  ui.plView = null;
+  logAct(`Giri calcolati: ${pts.length} clienti (${p.cities.join(', ')}) in ${days.length} giornate con ${techs.length} tecnici`);
+  commit();
+}
+function plFind(di, ri, cid){ const r = db.plan.days[di].routes[ri]; return {r, s: r.stops.find(x => x.cid === cid)}; }
+// Inserisce nel giro il cliente libero che allunga meno il percorso
+// Il cliente libero che allunga meno il giro (solo proposta: decide l'operatrice)
+function bestNearest(r, cands = plCandidates()){
+  const act = r.stops.filter(s => !isOut(s)).map(s => byId(db.clients, s.cid));
+  const ref = act.length ? act : [db.settings.depot];
+  let best = null, bc = Infinity, bpos = 0;
+  cands.forEach(c => {
+    if (Math.min(...ref.map(x => hav(x, c))) > 6) return;
+    for (let i = 0; i <= act.length; i++) {
+      const a = act[i - 1], b = act[i];
+      const cost = (a ? hav(a, c) : 0) + (b ? hav(c, b) : 0) - (a && b ? hav(a, b) : 0);
+      if (cost < bc) { bc = cost; best = c; bpos = i; }
+    }
+  });
+  return best ? {best, after: act[bpos - 1], extra: bc * 1.35} : null;
+}
+function replaceNearest(di, ri, silent){
+  const r = db.plan.days[di].routes[ri];
+  const cands = plCandidates();
+  if (!cands.length) { if (!silent) alert('Non ci sono altri clienti da programmare in queste zone.'); return null; }
+  const found = bestNearest(r, cands);
+  if (!found) { if (!silent) alert('Nessun cliente da programmare entro 6 km da questo giro.'); return null; }
+  const {best, after} = found;
+  const idx = after ? r.stops.findIndex(s => s.cid === after.id) + 1 : 0;
+  r.stops.splice(idx, 0, {cid: best.id, call: 'da_chiamare', tries: 0, added: true});
+  return best;
+}
+function setCall(di, ri, cid, v){
+  const {r, s} = plFind(di, ri, cid);
+  if (s.apptId) return alert('Il cliente è già in agenda.');
+  s.call = v;
+  if (isOut(s)) s.tries = (s.tries || 0) + 1;
+  if (isOut(s) && ui.plAuto) {
+    const n = replaceNearest(di, ri, true);
+    if (n) logAct(`Giro ${tname(r.techId)}: al posto di ${cname(cid)} proposto ${n.name}`);
+  }
+  closeModal();
+  commit();
+}
+function confirmMsg(c, day, eta){
+  return db.settings.confirmTpl.replaceAll('{nome}', c.name).replaceAll('{operatore}', me.name.split(' ')[0])
+    .replaceAll('{data}', fmtDate(day.date)).replaceAll('{ora}', minToT(eta));
+}
+function callForm(di, ri, cid){
+  const day = db.plan.days[di];
+  const info = routeInfo(day.routes[ri]);
+  const row = info.rows.find(x => x.s.cid === cid);
+  const c = byId(db.clients, cid);
+  const msg = confirmMsg(c, day, row ? row.eta : toMin(db.plan.start));
+  modal(`📞 ${esc(c.name)}`, `
+    <div class="grid2">
+      <div><b>Telefono</b><br>${esc(c.phone)}</div>
+      <div><b>Indirizzo</b><br>${esc(c.address)}</div>
+      <div><b>Proposta</b><br>${fmtLong(day.date)}<br>verso le <b>${row ? minToT(row.eta) : '—'}</b> con ${esc(tname(day.routes[ri].techId))}</div>
+      <div><b>Cambio filtri</b><br>ogni ${c.filtroMesi} mesi · scadenza ${fmtDate(c.prossimoCambio)}${c.prossimoCambio < ymd(new Date()) ? ' <span class="badge annullato">in ritardo</span>' : ''}</div>
+    </div>
+    <div class="hint" style="margin-top:12px"><b>Messaggio WhatsApp pronto</b> (in alternativa alla telefonata):<br>${esc(msg)}</div>
+    <p class="muted small">Demo: i numeri sono inventati, quindi la chiamata e WhatsApp sono simulati. Nella versione definitiva il tasto apre direttamente la chiamata o la chat.</p>
+    <b>Com'è andata?</b>`,
+    `<button class="ok" onclick="setCall(${di},${ri},'${cid}','confermato')">✓ Confermato</button>
+     <button class="ghost" onclick="setCall(${di},${ri},'${cid}','non_risponde')">Non risponde</button>
+     <button class="ghost" onclick="setCall(${di},${ri},'${cid}','rimanda')">Vuole rimandare</button>`);
+}
+// Simula l'esito di tutte le chiamate: chi non conferma viene sostituito dal cliente libero più vicino
+function simulateCalls(){
+  if (!db.plan) return;
+  const tot = {conf: 0, nr: 0, rim: 0, sost: 0};
+  for (let round = 0; round < 6; round++) {
+    let any = false;
+    db.plan.days.forEach((d, di) => d.routes.forEach((r, ri) => {
+      r.stops.filter(s => s.call === 'da_chiamare' && !s.apptId).forEach(s => {
+        any = true;
+        const x = Math.random();
+        s.call = x < 0.72 ? 'confermato' : x < 0.9 ? 'non_risponde' : 'rimanda';
+        if (s.call === 'confermato') tot.conf++;
+        else { s.tries = (s.tries || 0) + 1; s.call === 'rimanda' ? tot.rim++ : tot.nr++; if (ui.plAuto && replaceNearest(di, ri, true)) tot.sost++; }
+      });
+    }));
+    if (!any) break;
+  }
+  logAct(`Chiamate simulate: ${tot.conf} confermati, ${tot.nr} non rispondono, ${tot.rim} rimandano, ${tot.sost} sostituiti con clienti vicini`);
+  commit();
+  alert(`Simulazione completata.\n\n✓ Confermati: ${tot.conf}\n✗ Non rispondono: ${tot.nr}\n↻ Vogliono rimandare: ${tot.rim}\n\n${ui.plAuto ? `Al loro posto il gestionale ha inserito ${tot.sost} clienti vicini e ha ricalcolato orari e percorsi.` : 'In ogni giro trovi la proposta del cliente libero più vicino: decidi tu se aggiungerlo.'}`);
+}
+// Mette in agenda (e nel "Mio giro" del tecnico) tutti i clienti confermati
+function bookConfirmed(){
+  if (!requireAdmin() || !db.plan) return;
+  const kit = [{itemId:'i1', qty:1}, {itemId:'i2', qty:1}];
+  const svc = db.settings.services.find(s => s.name === FILTRI) || db.settings.services[0];
+  let n = 0;
+  db.plan.days.forEach(d => d.routes.forEach(r => routeInfo(r).rows.forEach(({s, c, eta}) => {
+    if (s.call !== 'confermato' || s.apptId) return;
+    const a = {id: uid(), date: d.date, time: minToT(eta), duration: db.plan.dur, clientId: c.id, techId: r.techId, service: FILTRI, price: svc.price,
+      address: c.address, notes: 'Confermato al telefono · giro pianificato automaticamente', status: 'programmato',
+      materials: kit.filter(m => byId(db.items, m.itemId)).map(m => ({...m})), stockApplied: false};
+    db.appointments.push(a);
+    s.apptId = a.id;
+    n++;
+  })));
+  if (!n) return alert('Nessun cliente confermato da mettere in agenda.');
+  logAct(`${n} cambi filtri confermati messi in agenda dai giri pianificati`);
+  commit();
+  alert(`${n} interventi messi in agenda. Ogni tecnico li trova in "Il mio giro" nell'ordine del percorso.`);
+}
+function delPlan(){
+  if (!confirm('Eliminare il piano dei giri? Gli appuntamenti già messi in agenda restano.')) return;
+  db.plan = null;
+  commit();
+}
+function setRouteTech(di, ri, tid){ db.plan.days[di].routes[ri].techId = tid; commit(); }
+function moveStop(di, ri, cid, dir){
+  const r = db.plan.days[di].routes[ri];
+  const i = r.stops.findIndex(s => s.cid === cid), j = i + dir;
+  if (j < 0 || j >= r.stops.length) return;
+  [r.stops[i], r.stops[j]] = [r.stops[j], r.stops[i]];
+  commit();
+}
+function reoptimize(di, ri){
+  const r = db.plan.days[di].routes[ri];
+  const out = r.stops.filter(isOut);
+  const ordered = orderRoute(r.stops.filter(s => !isOut(s)).map(s => byId(db.clients, s.cid)), db.settings.depot);
+  r.stops = ordered.map(c => r.stops.find(s => s.cid === c.id)).concat(out);
+  commit();
+}
+// I clienti liberi più vicini a una tappa, come quando si confrontano le pagine di Google Maps
+function nearForm(di, ri, cid){
+  const c = byId(db.clients, cid);
+  const list = plCandidates().map(x => ({x, d: roadKm(c, x)})).sort((a, b) => a.d - b.d).slice(0, 8);
+  modal(`Clienti più vicini a ${esc(c.name)}`, `<p class="muted small">${esc(c.address)} · clienti delle zone scelte con il cambio filtri da programmare (o del mese dopo, da anticipare) non ancora nel piano.</p>
+    ${list.map(({x, d}) => `<div class="rowline"><b>${fmtKm(d)}</b> · ${esc(x.name)}${anticipo(x)}<br><small class="muted">${esc(x.address)} · scadenza ${fmtDate(x.prossimoCambio)}</small>
+      <div class="row-acts"><button class="sm" onclick="addAfter(${di},${ri},'${cid}','${x.id}')">Aggiungi dopo questa tappa</button></div></div>`).join('') || '<p class="muted">Nessun cliente libero nelle zone scelte.</p>'}`,
+    `<button class="ghost" onclick="closeModal()">Chiudi</button>`);
+}
+function addAfter(di, ri, cid, newId){
+  const r = db.plan.days[di].routes[ri];
+  const i = r.stops.findIndex(s => s.cid === cid);
+  const st = {cid: newId, call: 'da_chiamare', tries: 0, added: true};
+  if (i >= 0) r.stops.splice(i + 1, 0, st); else insertBest(r, st);
+  closeModal();
+  commit();
+}
+// Inserisce la tappa nel punto del giro dove allunga meno il percorso
+function insertBest(r, st){
+  const c = byId(db.clients, st.cid);
+  const act = r.stops.filter(s => !isOut(s));
+  let best = act.length, bc = Infinity;
+  for (let i = 0; i <= act.length; i++) {
+    const a = act[i - 1] && byId(db.clients, act[i - 1].cid), b = act[i] && byId(db.clients, act[i].cid);
+    const cost = (a ? hav(a, c) : 0) + (b ? hav(c, b) : 0) - (a && b ? hav(a, b) : 0);
+    if (cost < bc) { bc = cost; best = i; }
+  }
+  const idx = best < act.length ? r.stops.indexOf(act[best]) : (act.length ? r.stops.indexOf(act[act.length - 1]) + 1 : 0);
+  r.stops.splice(idx, 0, st);
+}
+function removeStop(di, ri, cid){
+  const r = db.plan.days[di].routes[ri];
+  r.stops = r.stops.filter(s => s.cid !== cid || s.apptId);
+  commit();
+}
+// Link di Google Maps a blocchi di 10 punti (il massimo che Maps accetta in un percorso)
+function gmapsLinks(points){
+  const out = [];
+  for (let i = 0; i === 0 || i < points.length - 1; i += 9) out.push('https://www.google.com/maps/dir/' + points.slice(i, i + 10).map(p => p.lat.toFixed(5) + ',' + p.lng.toFixed(5)).join('/'));
+  return points.length ? out : [];
+}
+function exportPlanCsv(){
+  const rows = [['Data','Tecnico','Ordine','Ora prevista','Cliente','Codice','Telefono','Indirizzo','Distanza dalla tappa precedente','Esito chiamata','In agenda']];
+  db.plan.days.forEach(d => d.routes.forEach(r => routeInfo(r).rows.forEach((x, i) => rows.push([fmtDate(d.date), tname(r.techId), i + 1, minToT(x.eta),
+    x.c.name, x.c.codice, x.c.phone, x.c.address, fmtKm(x.leg), CALL[x.s.call][0], x.s.apptId ? 'si' : 'no']))));
+  downloadFile('giri-cambio-filtri-' + ymd(new Date()) + '.csv', 'text/csv;charset=utf-8', csvOf(rows));
+}
+// Mappa schematica (senza servizi esterni): tappe numerate e percorsi per tecnico
+function planMap(day){
+  const routes = day.routes.map(r => ({r, info: routeInfo(r), t: byId(db.users, r.techId) || {color: '#888', name: '—'}}));
+  const pts = routes.flatMap(x => x.info.rows.map(y => y.c));
+  if (!pts.length) return '';
+  const dep = db.settings.depot;
+  const showDep = pts.some(p => hav(p, dep) < 30);
+  const all = showDep ? pts.concat([dep]) : pts;
+  let minLa = Math.min(...all.map(p => p.lat)), maxLa = Math.max(...all.map(p => p.lat));
+  let minLo = Math.min(...all.map(p => p.lng)), maxLo = Math.max(...all.map(p => p.lng));
+  const k = Math.cos(((minLa + maxLa) / 2) * Math.PI / 180);
+  const padLa = (maxLa - minLa) * .08 + .002, padLo = (maxLo - minLo) * .08 + .002;
+  minLa -= padLa; maxLa += padLa; minLo -= padLo; maxLo += padLo;
+  const W = 800, H = 460, sc = Math.min(W / ((maxLo - minLo) * k), H / (maxLa - minLa));
+  const offX = (W - (maxLo - minLo) * k * sc) / 2, offY = (H - (maxLa - minLa) * sc) / 2;
+  const X = p => (offX + (p.lng - minLo) * k * sc).toFixed(1), Y = p => (offY + (maxLa - p.lat) * sc).toFixed(1);
+  const free = plCandidates().filter(c => c.lat > minLa && c.lat < maxLa && c.lng > minLo && c.lng < maxLo);
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;background:var(--soft);border-radius:10px;display:block" role="img" aria-label="Mappa dei giri">
+    ${free.map(c => `<circle cx="${X(c)}" cy="${Y(c)}" r="5" fill="var(--muted)" opacity=".5" style="cursor:pointer" onclick="mapPick(${ui.plDay},'${c.id}')"><title>${esc(c.name)} · ${esc(c.address)} (da programmare: tocca per aggiungerlo a un giro)</title></circle>`).join('')}
+    ${routes.map(({info, t}) => {
+      const path = (showDep && !info.remote ? [dep] : []).concat(info.rows.map(y => y.c));
+      return `<polyline points="${path.map(p => X(p) + ',' + Y(p)).join(' ')}" fill="none" stroke="${t.color}" stroke-width="2.5" stroke-linejoin="round" opacity=".85"/>` +
+        info.rows.map((y, i) => `<g><circle cx="${X(y.c)}" cy="${Y(y.c)}" r="10" fill="${t.color}" stroke="#fff" stroke-width="1.5"/>
+          <text x="${X(y.c)}" y="${Y(y.c)}" dy="3.5" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">${i + 1}</text>
+          <title>${esc(t.name)} · ${i + 1}. ${minToT(y.eta)} ${esc(y.c.name)} · ${esc(y.c.address)}</title></g>`).join('');
+    }).join('')}
+    ${showDep ? `<rect x="${+X(dep) - 8}" y="${+Y(dep) - 8}" width="16" height="16" rx="3" fill="#e3b64b" stroke="#0f2b40" stroke-width="1.5"><title>${esc(dep.label)}</title></rect>` : ''}
+  </svg>
+  <p class="muted small" style="margin:6px 0 0">${showDep ? '🟨 sede · ' : ''}cerchi numerati = ordine delle tappe per tecnico · puntini grigi = clienti liberi in zona (anche del mese dopo): toccali per aggiungerli</p>`;
+}
+function plToggleCity(city){
+  const p = ui.pl;
+  p.cities = p.cities.includes(city) ? p.cities.filter(x => x !== city) : [...p.cities, city];
+  render();
+}
+function plToggleTech(id){
+  const p = ui.pl;
+  p.techs = p.techs.includes(id) ? p.techs.filter(x => x !== id) : [...p.techs, id];
+  render();
+}
+function viewPianifica(){
+  if (!ui.pl) ui.pl = defaultPl();
+  const p = ui.pl;
+  const pend = daProgrammare(p.month, p.arretrati);
+  const byCity = {};
+  pend.forEach(c => { byCity[c.city] = (byCity[c.city] || 0) + 1; });
+  const sel = pend.filter(c => p.cities.includes(c.city));
+  const late = sel.filter(c => c.prossimoCambio < ymd(new Date())).length;
+  const nT = p.techs.length || 1, cap = Math.max(1, +p.perTech || 9);
+  const nDays = Math.ceil(Math.ceil(sel.length / cap) / nT);
+  const cityBtns = Object.entries(byCity).sort((a, b) => b[1] - a[1]).map(([c, n]) =>
+    `<button class="sm ${p.cities.includes(c) ? '' : 'ghost'}" onclick="plToggleCity('${esc(c).replace(/'/g, "\\'")}')">${esc(c)} · ${n}</button>`).join('');
+  return `
+  <div class="grid2">
+    <div class="card"><h3>1. Chi programmare</h3><div class="stack">
+      <div class="actions">
+        <label>Mese delle scadenze<input type="month" value="${p.month}" onchange="ui.pl.month=this.value;render()"></label>
+        <label class="chk"><input type="checkbox" ${p.arretrati ? 'checked' : ''} onchange="ui.pl.arretrati=this.checked;render()"> Includi gli arretrati dei mesi prima</label>
+      </div>
+      <div><small class="muted">Comuni (clienti con il cambio filtri da programmare). Tocca per scegliere:</small>
+        <div class="actions" style="margin-top:6px">${cityBtns || '<span class="muted">Nessun cliente da programmare in questo mese.</span>'}</div>
+        <div class="actions" style="margin-top:6px"><button class="ghost sm" onclick="ui.pl.cities=${esc(JSON.stringify(Object.keys(byCity)))};render()">Tutti</button><button class="ghost sm" onclick="ui.pl.cities=[];render()">Nessuno</button></div>
+      </div>
+      <div class="hint"><b>${sel.length}</b> clienti selezionati${late ? ` · <b>${late}</b> già in ritardo` : ''}</div>
+    </div></div>
+    <div class="card"><h3>2. Come organizzare</h3><div class="stack">
+      <div class="actions">
+        <label>Primo giorno<input type="date" value="${p.date}" onchange="ui.pl.date=this.value;render()"></label>
+        <label>Interventi per tecnico al giorno<input type="number" min="1" max="20" value="${p.perTech}" onchange="ui.pl.perTech=+this.value||9;render()" style="width:90px"></label>
+        <label>Inizio<input type="time" value="${p.start}" onchange="ui.pl.start=this.value"></label>
+        <label>Minuti a intervento<input type="number" min="10" step="5" value="${p.dur}" onchange="ui.pl.dur=+this.value||30" style="width:90px"></label>
+      </div>
+      <div><small class="muted">Tecnici disponibili:</small>
+        <div class="actions" style="margin-top:6px">${tecnici().map(t => `<button class="sm ${p.techs.includes(t.id) ? '' : 'ghost'}" style="${p.techs.includes(t.id) ? 'background:' + t.color : ''}" onclick="plToggleTech('${t.id}')">${esc(t.name)}</button>`).join('')}</div>
+      </div>
+      <div class="hint">Con ${p.techs.length} tecnici e ${cap} interventi a testa servono circa <b>${nDays || 0} giornate</b> lavorative.</div>
+    </div></div>
+  </div>
+  <div class="card" style="text-align:center">
+    <button class="big" style="max-width:520px" onclick="planGiri()" ${sel.length && p.techs.length ? '' : 'disabled'}>⚡ Calcola i giri automaticamente</button>
+    <p class="muted small" style="margin-bottom:0">Raggruppa i clienti vicini, assegna un gruppo a ogni tecnico, ordina il percorso più corto e calcola orari e chilometri. Al posto di chi non risponde propone da solo il cliente libero più vicino.</p>
+  </div>
+  ${db.plan ? planResult() : ''}`;
+}
+function planResult(){
+  const pl = db.plan;
+  ui.plDay = Math.min(ui.plDay || 0, pl.days.length - 1);
+  const di = ui.plDay, day = pl.days[di];
+  const allStops = pl.days.flatMap(d => d.routes.flatMap(r => r.stops));
+  const cnt = k => allStops.filter(s => s.call === k).length;
+  const booked = allStops.filter(s => s.apptId).length;
+  const kmTot = pl.days.reduce((s, d) => s + d.routes.reduce((t, r) => t + routeInfo(r).km, 0), 0);
+  return `
+  <div class="card">
+    <div class="top"><div><h3 style="margin:0">Giri calcolati · ${esc(pl.cities.join(', '))}</h3><small class="muted">Scadenze di ${mesLabel(pl.month)}${pl.arretrati ? ' e arretrati' : ''} · calcolato il ${fmtStamp(pl.created)}</small></div>
+      <div class="actions">
+        <button class="ghost sm" onclick="exportPlanCsv()">Esporta (Excel/CSV)</button>
+        <button class="danger sm" onclick="delPlan()">Elimina piano</button>
+      </div></div>
+    <div class="kpis">
+      ${kpi('Giornate', pl.days.length)}
+      ${kpi('Clienti nei giri', allStops.filter(s => !isOut(s)).length)}
+      ${kpi('Km totali stimati', fmtKm(kmTot))}
+      ${kpi('Da chiamare', cnt('da_chiamare'), cnt('da_chiamare') ? 'warn' : '')}
+      ${kpi('Confermati', cnt('confermato'))}
+      ${kpi('In agenda', booked)}
+    </div>
+    <div class="actions">
+      <button onclick="simulateCalls()" ${cnt('da_chiamare') ? '' : 'disabled'}>🎲 Simula tutte le chiamate (demo)</button>
+      <button class="ok" onclick="bookConfirmed()" ${cnt('confermato') > 0 ? '' : 'disabled'}>📅 Metti in agenda i confermati</button>
+      <button class="ghost" onclick="newRoute(${di})">+ Giro vuoto da comporre a mano</button>
+      <label class="chk"><input type="checkbox" ${ui.plAuto ? 'checked' : ''} onchange="ui.plAuto=this.checked"> Sostituzione automatica di chi non risponde (altrimenti solo proposta)</label>
+    </div>
+    <p class="muted small" style="margin-bottom:0">Il calcolo è solo un punto di partenza: puoi spostare ogni cliente su un altro tecnico o giorno, cambiare l'ordine, togliere o aggiungere clienti (anche toccando i puntini grigi sulla mappa).</p>
+  </div>
+  <div class="actions" style="margin-bottom:12px">${pl.days.map((d, i) => `<button class="sm ${i === di ? '' : 'ghost'}" onclick="ui.plDay=${i};ui.plView=null;render()">${fmtDate(d.date)} · ${d.routes.reduce((s, r) => s + r.stops.filter(x => !isOut(x)).length, 0)}</button>`).join('')}</div>
+  <div class="card">
+    <div class="top"><h3 style="margin:0">${fmtLong(day.date)}</h3>
+      <div class="actions"><span class="muted small">Mostra:</span>
+        <button class="sm ${ui.plTech === 'all' ? '' : 'ghost'}" onclick="setPlTech('all')">Tutti i tecnici</button>
+        ${day.routes.map(r => { const t = byId(db.users, r.techId) || {color: '#888', name: '—'}; const on = ui.plTech === r.techId;
+          return `<button class="sm ${on ? '' : 'ghost'}" style="${on ? 'background:' + t.color : 'border-left:4px solid ' + t.color}" onclick="setPlTech('${r.techId}')">${esc(t.name.split(' ')[0])} · ${routeInfo(r).rows.length}</button>`; }).join('')}
+      </div></div>
+    <div id="plmap"></div>
+    <p class="muted small" style="margin:6px 0 0">🏠 sede · cerchi numerati = ordine delle tappe · puntini grigi = clienti liberi in zona · tocca un punto per vedere il cliente, chiamarlo o aggiungerlo</p>
+  </div>
+  <div class="cols">${day.routes.map((r, ri) => ui.plTech === 'all' || ui.plTech === r.techId ? routeCard(di, ri, r) : '').join('')}</div>`;
+}
+function routeCard(di, ri, r){
+  const t = byId(db.users, r.techId) || {color: '#888', name: '—'};
+  const info = routeInfo(r);
+  const out = r.stops.filter(isOut);
+  const pts = (info.remote ? [] : [db.settings.depot]).concat(info.rows.map(x => x.c));
+  return `<div class="col">
+    <div class="colh" style="border-color:${t.color}">
+      <select onchange="setRouteTech(${di},${ri},this.value)" style="font-weight:600">${tecnici().map(x => `<option value="${x.id}" ${x.id === r.techId ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>
+    </div>
+    <div class="muted small">${info.rows.length} interventi · ${fmtKm(info.km)} · ${db.plan.start}–${minToT(info.end)}${info.remote ? ' · zona lontana: orari dal primo cliente' : ''}</div>
+    <div class="actions" style="margin:8px 0">
+      ${gmapsLinks(pts).map((u, i, a) => `<a class="btn ghost sm" style="padding:5px 9px;font-size:13px" href="${u}" target="_blank" rel="noopener">🗺️ Google Maps${a.length > 1 ? ` ${i + 1}/${a.length}` : ''}</a>`).join('')}
+      <button class="ghost sm" onclick="reoptimize(${di},${ri})">↺ Riottimizza</button>
+    </div>
+    ${info.rows.map((x, i) => `<div class="appt">
+      <div class="at"><b>${i + 1}. ${minToT(x.eta)}</b> <span class="muted small">${i === 0 && info.remote ? 'primo cliente' : '+' + fmtKm(x.leg)}</span>
+        ${x.s.apptId ? '<span class="badge programmato">In agenda</span>' : `<span class="badge ${CALL[x.s.call][1]}">${CALL[x.s.call][0]}</span>`}${x.s.added ? ' <span class="badge">aggiunto</span>' : ''}${x.c.prossimoCambio < ymd(new Date()) ? ' <span class="badge annullato">in ritardo</span>' : ''}</div>
+      <div><b>${esc(x.c.name)}</b> <small class="muted">${esc(x.c.codice)}</small></div>
+      <div class="muted small">${esc(x.c.address)}${x.c.zona && x.c.zona !== x.c.city ? ' · ' + esc(x.c.zona) : ''}</div>
+      ${x.s.apptId ? '' : `<div class="row-acts">
+        <button class="sm" onclick="callForm(${di},${ri},'${x.c.id}')">📞 Chiama</button>
+        <button class="ghost sm" onclick="nearForm(${di},${ri},'${x.c.id}')">Più vicini</button>
+        <button class="ghost sm" onclick="moveStop(${di},${ri},'${x.c.id}',-1)" title="Sposta su">▲</button>
+        <button class="ghost sm" onclick="moveStop(${di},${ri},'${x.c.id}',1)" title="Sposta giù">▼</button>
+        <button class="ghost sm" onclick="removeStop(${di},${ri},'${x.c.id}')" title="Togli dal giro">✕</button>
+        <select onchange="moveToRoute(${di},${ri},'${x.c.id}',this.value)" title="Sposta su un altro tecnico o giorno"><option value="">Sposta a…</option>${routeOpts(di, ri)}</select>
+      </div>`}
+    </div>`).join('') || '<p class="muted empty">Nessuna tappa: aggiungi i clienti che vuoi tu.</p>'}
+    ${out.length ? `<div class="small muted" style="margin-top:8px"><b>Fuori dal giro</b> (restano da programmare)</div>
+      ${out.map(s => `<div class="rowline small"><s>${esc(cname(s.cid))}</s> · <span class="badge ${CALL[s.call][1]}">${CALL[s.call][0]}</span> <button class="ghost sm" onclick="setCall(${di},${ri},'${s.cid}','da_chiamare')">Rimetti</button></div>`).join('')}` : ''}
+    ${(() => { const f = bestNearest(r); return f ? `<div class="hint" style="margin-top:8px">💡 <b>Proposta:</b> ${esc(f.best.name)}${anticipo(f.best)}<br><small>${esc(f.best.address)} · allunga il giro di ${fmtKm(f.extra)}</small>
+      <div class="row-acts"><button class="sm" onclick="replaceNearest(${di},${ri});commit()">Aggiungi</button><button class="ghost sm" onclick="nearForm(${di},${ri},'${f.best.id}')">Altri vicini</button></div></div>` : ''; })()}
+    <div class="row-acts"><button class="ghost sm" onclick="addSearchForm(${di},${ri})">🔍 Aggiungi un cliente a scelta</button></div>
+  </div>`;
+}
+function routeOpts(di, ri){
+  return db.plan.days.flatMap((d, dj) => d.routes.map((r, rj) => dj === di && rj === ri ? '' :
+    `<option value="${dj}-${rj}">${fmtDate(d.date)} · ${esc(tname(r.techId))}</option>`)).join('');
+}
+// Sposta un cliente su un altro giro (altro tecnico o altro giorno), in fondo alla lista
+function moveToRoute(di, ri, cid, to){
+  if (!to) return;
+  const [dj, rj] = to.split('-').map(Number);
+  const from = db.plan.days[di].routes[ri];
+  const s = from.stops.find(x => x.cid === cid);
+  from.stops = from.stops.filter(x => x !== s);
+  db.plan.days[dj].routes[rj].stops.push(s);
+  commit();
+}
+function newRoute(di){
+  const day = db.plan.days[di];
+  const used = new Set(day.routes.map(r => r.techId));
+  const t = tecnici().find(x => !used.has(x.id)) || tecnici()[0];
+  day.routes.push({techId: t.id, stops: []});
+  commit();
+}
+function addToRoute(di, ri, cid){
+  insertBest(db.plan.days[di].routes[ri], {cid, call: 'da_chiamare', tries: 0, added: true});
+  closeModal();
+  commit();
+}
+// Ricerca libera tra i clienti da programmare, con la distanza dall'ultima tappa del giro
+function addSearchForm(di, ri){
+  modal('Aggiungi un cliente al giro', `<input id="add-q" placeholder="Nome, via, zona o comune..." style="width:100%" oninput="drawAddList(${di},${ri})">
+    <p class="muted small">Tutti i comuni: clienti con il cambio filtri da programmare (o del mese dopo, da anticipare) non ancora nel piano, ordinati per distanza dall'ultima tappa.</p>
+    <div id="add-list"></div>`, `<button class="ghost" onclick="closeModal()">Chiudi</button>`);
+  drawAddList(di, ri);
+  setTimeout(() => { const i = document.getElementById('add-q'); if (i) i.focus(); }, 0);
+}
+function drawAddList(di, ri){
+  const q = (document.getElementById('add-q') || {value: ''}).value.trim().toLowerCase();
+  const act = routeInfo(db.plan.days[di].routes[ri]).rows;
+  const ref = act.length ? act[act.length - 1].c : db.settings.depot;
+  const inP = inPlanSet();
+  const list = daProgrammare(addMonths(db.plan.month + '-01', 1).slice(0, 7), true).filter(c => !inP.has(c.id) && (!q || [c.name, c.address, c.zona, c.city, c.codice].join(' ').toLowerCase().includes(q)))
+    .map(c => ({c, d: roadKm(ref, c)})).sort((a, b) => a.d - b.d).slice(0, 15);
+  document.getElementById('add-list').innerHTML = list.map(({c, d}) => `<div class="rowline"><b>${fmtKm(d)}</b> · ${esc(c.name)}${anticipo(c)}<br><small class="muted">${esc(c.address)} · scadenza ${fmtDate(c.prossimoCambio)}</small>
+    <div class="row-acts"><button class="sm" onclick="addToRoute(${di},${ri},'${c.id}')">Aggiungi</button></div></div>`).join('') || '<p class="muted">Nessun cliente trovato.</p>';
+}
+// Tocco su un puntino grigio della mappa: scegli in quale giro metterlo
+function mapPick(di, cid){
+  const c = byId(db.clients, cid), day = db.plan.days[di];
+  modal(`Aggiungi ${esc(c.name)}`, `<p>${esc(c.address)}<br><small class="muted">Cambio filtri ogni ${c.filtroMesi} mesi · scadenza ${fmtDate(c.prossimoCambio)}</small></p>
+    <b>In quale giro di ${fmtDate(day.date)}?</b>
+    ${day.routes.map((r, ri) => { const rows = routeInfo(r).rows; const d = rows.length ? Math.min(...rows.map(x => roadKm(x.c, c))) : roadKm(db.settings.depot, c);
+      return `<div class="rowline"><button class="sm" onclick="addToRoute(${di},${ri},'${cid}')">${esc(tname(r.techId))}</button> <span class="muted small">tappa più vicina a ${fmtKm(d)}</span></div>`; }).join('')}`,
+    `<button class="ghost" onclick="closeModal()">Annulla</button>`);
+}
+// Completare un cambio filtri aggiorna la prossima scadenza del cliente
+function applyFiltri(a){
+  if (a.service !== FILTRI || a.status !== 'completato') return;
+  const c = byId(db.clients, a.clientId);
+  if (!c || (c.ultimoCambio && c.ultimoCambio >= a.date)) return;
+  c.ultimoCambio = a.date;
+  c.prossimoCambio = addMonths(a.date, c.filtroMesi || 6);
+}
+
+// Mappa stradale disegnata dai dati OpenStreetMap del file mappa.json (strade, costa, nomi):
+// non usa immagini esterne, così funziona anche nella pagina pubblicata. Senza il file resta la mappa schematica.
+let plMapObj = null, baseData = null, baseLayers = null;
+const baseReady = fetch('mappa.json').then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+  .then(d => { baseData = d; }).catch(() => { baseData = false; });
+const ROAD = {m:['#e892a2', 6, 9], p:['#fcd6a4', 5, 10], s:['#f7fabf', 4.5, 11], t:['#ffffff', 4, 13], r:['#ffffff', 3, 14]};
+function decodeLine(f){
+  const out = [[f[0] / 1e5, f[1] / 1e5]];
+  let la = f[0], lo = f[1];
+  for (let i = 2; i < f.length; i += 2) { la += f[i]; lo += f[i + 1]; out.push([la / 1e5, lo / 1e5]); }
+  return out;
+}
+function buildBase(){
+  if (baseLayers || !baseData) return;
+  const L1 = baseData.l, mk = (k, o) => L.polyline(L1[k].map(decodeLine), {pane: 'base', interactive: false, ...o});
+  baseLayers = {c: mk('c', {color: '#8ab4d8', weight: 2.5})};
+  ['r', 't', 's', 'p', 'm'].forEach(k => {
+    const [col, w, z] = ROAD[k];
+    baseLayers[k] = {z, lines: [mk(k, {color: '#c9c2b6', weight: w + 1.5}), mk(k, {color: col, weight: w})]};
+  });
+}
+// Nomi di vie e quartieri: solo quelli visibili, in base allo zoom
+function drawLabels(map, grp){
+  grp.clearLayers();
+  if (!baseData) return;
+  const z = map.getZoom(), b = map.getBounds().pad(.1);
+  const lab = (lat, lng, html, cls) => L.marker([lat, lng], {pane: 'labels', interactive: false,
+    icon: L.divIcon({className: '', html: `<span class="mlab ${cls}">${esc(html)}</span>`, iconSize: [0, 0]})}).addTo(grp);
+  baseData.pl.forEach(([n, la, lo, t]) => {
+    const big = t === 'city' || t === 'town';
+    if ((big && z <= 14) || (!big && z >= 13 && z <= 16 && t !== 'neighbourhood') || (t === 'neighbourhood' && z >= 15))
+      if (b.contains([la, lo])) lab(la, lo, n, big ? 'mlab-town' : 'mlab-quar');
+  });
+  if (z >= 16) {
+    let n = 0;
+    for (const [nm, la, lo, c] of baseData.n) { if (n > 160) break; if (b.contains([la, lo])) { lab(la, lo, nm, 'mlab-via'); n++; } }
+  }
+}
+function drawPlanMap(){
+  const box = document.getElementById('plmap');
+  if (plMapObj) { plMapObj.remove(); plMapObj = null; }
+  if (!box || !db.plan) return;
+  const di = ui.plDay, day = db.plan.days[di];
+  if (typeof L === 'undefined' || baseData === false) { box.outerHTML = planMap(day); return; }
+  const map = L.map(box, {scrollWheelZoom: false, preferCanvas: true, attributionControl: true});
+  plMapObj = map;
+  map.attributionControl.setPrefix(false).addAttribution('© OpenStreetMap contributors');
+  map.createPane('base').style.zIndex = 250;
+  map.createPane('labels').style.zIndex = 450;
+  map.getPane('labels').style.pointerEvents = 'none';
+  const labels = L.layerGroup().addTo(map);
+  const showBase = () => {
+    if (plMapObj !== map) return;
+    if (baseData === false) { map.remove(); plMapObj = null; const b2 = document.getElementById('plmap'); if (b2) b2.outerHTML = planMap(day); return; }
+    buildBase();
+    baseLayers.c.addTo(map);
+    const byZoom = () => {
+      const z = map.getZoom();
+      ['r', 't', 's', 'p', 'm'].forEach(k => baseLayers[k].lines.forEach(l => { if (z >= baseLayers[k].z) { if (!map.hasLayer(l)) l.addTo(map); } else map.removeLayer(l); }));
+      drawLabels(map, labels);
+    };
+    map.on('zoomend moveend', byZoom);
+    byZoom();
+  };
+  if (baseData) setTimeout(showBase, 0); else baseReady.then(showBase);
+  const dep = db.settings.depot;
+  const bounds = [];
+  const sel = ui.plTech || 'all';
+  day.routes.forEach((r, ri) => {
+    const t = byId(db.users, r.techId) || {color: '#888', name: '—'};
+    const on = sel === 'all' || sel === r.techId;
+    const info = routeInfo(r);
+    const path = (info.remote ? [] : [dep]).concat(info.rows.map(x => x.c)).map(p => [p.lat, p.lng]);
+    if (path.length > 1) L.polyline(path, {color: t.color, weight: on ? 4 : 2, opacity: on ? .85 : .2}).addTo(map);
+    info.rows.forEach((x, i) => {
+      const icon = L.divIcon({className: '', iconSize: [26, 26], iconAnchor: [13, 13],
+        html: `<div style="width:26px;height:26px;border-radius:50%;background:${t.color};color:#fff;font:700 12px/26px system-ui;text-align:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);opacity:${on ? 1 : .25}">${i + 1}</div>`});
+      L.marker([x.c.lat, x.c.lng], {icon, zIndexOffset: on ? 1000 : 0}).addTo(map)
+        .bindPopup(`<b>${esc(t.name)} · tappa ${i + 1} · ${minToT(x.eta)}</b><br>${esc(x.c.name)}<br><small>${esc(x.c.address)}</small><br>
+          <span class="badge ${x.s.apptId ? 'programmato' : CALL[x.s.call][1]}">${x.s.apptId ? 'In agenda' : CALL[x.s.call][0]}</span>
+          ${x.s.apptId ? '' : `<div class="row-acts"><button class="sm" onclick="callForm(${di},${ri},'${x.c.id}')">📞 Chiama</button><button class="ghost sm" onclick="nearForm(${di},${ri},'${x.c.id}')">Più vicini</button></div>`}`);
+      if (on) bounds.push([x.c.lat, x.c.lng]);
+    });
+  });
+  // clienti liberi in zona: toccandoli si sceglie in quale giro metterli
+  const all = day.routes.flatMap(r => routeInfo(r).rows.map(x => x.c));
+  if (all.length) {
+    const la = all.map(c => c.lat), lo = all.map(c => c.lng);
+    const box2 = [Math.min(...la) - .01, Math.max(...la) + .01, Math.min(...lo) - .01, Math.max(...lo) + .01];
+    plCandidates().filter(c => c.lat > box2[0] && c.lat < box2[1] && c.lng > box2[2] && c.lng < box2[3]).forEach(c => {
+      L.circleMarker([c.lat, c.lng], {radius: 5, color: '#fff', weight: 1, fillColor: '#6b7785', fillOpacity: .75}).addTo(map)
+        .bindPopup(`<b>${esc(c.name)}</b>${anticipo(c)}<br><small>${esc(c.address)} · scadenza ${fmtDate(c.prossimoCambio)}</small><div class="row-acts"><button class="sm" onclick="mapPick(${di},'${c.id}')">+ Aggiungi a un giro</button></div>`);
+    });
+  }
+  if (all.some(c => hav(c, dep) < 30)) L.marker([dep.lat, dep.lng], {icon: L.divIcon({className: '', iconSize: [22, 22], iconAnchor: [11, 11],
+    html: '<div style="width:22px;height:22px;border-radius:5px;background:#e3b64b;border:2px solid #0f2b40;font-size:12px;line-height:18px;text-align:center">🏠</div>'})}).addTo(map).bindPopup(esc(dep.label));
+  const keep = ui.plView && ui.plView.key === di + '|' + sel;
+  if (keep) map.setView(ui.plView.center, ui.plView.zoom);
+  else if (bounds.length) map.fitBounds(bounds, {padding: [30, 30], maxZoom: 16});
+  else map.setView([dep.lat, dep.lng], 12);
+  map.on('moveend', () => { ui.plView = {key: di + '|' + sel, center: map.getCenter(), zoom: map.getZoom()}; });
+}
+function setPlTech(v){ ui.plTech = v; ui.plView = null; render(); }
+
+/* ---------- IL MIO GIRO (mobile) ---------- */
+function viewGiro(){
+  const tid = isAdmin() ? (ui.giroTech || tecnici()[0].id) : me.id;
+  if (isAdmin()) ui.giroTech = tid;
+  let list = db.appointments.filter(a => a.techId === tid && a.date === ui.giroDate);
+  list = ui.giroZona
+    ? list.sort((a,b) => cityOf(a).localeCompare(cityOf(b)) || byTime(a,b))
+    : list.sort(byTime);
+  const t = byId(db.users, tid);
+  return `
+  <div class="actions" style="margin-bottom:12px">
+    ${isAdmin() ? `<select onchange="ui.giroTech=this.value;render()">${tecnici().map(x => `<option value="${x.id}" ${x.id === tid ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>` : ''}
+    <button class="ghost sm" onclick="moveDayGiro(-1)">◀</button>
+    <input type="date" value="${ui.giroDate}" onchange="ui.giroDate=this.value;render()">
+    <button class="ghost sm" onclick="moveDayGiro(1)">▶</button>
+    <button class="ghost sm" onclick="ui.giroZona=!ui.giroZona;render()">${ui.giroZona ? 'Ordine per orario' : 'Ordine per zona'}</button>
+  </div>
+  <p class="muted small">${list.length} interventi · ${fmtDate(ui.giroDate)}</p>
+  ${(() => { const pts = list.filter(a => a.status !== 'annullato').map(a => byId(db.clients, a.clientId)).filter(c => c && c.lat); return pts.length > 1 ? `<div class="actions" style="margin-bottom:12px">${gmapsLinks(pts).map((u, i, arr) => `<a class="btn" href="${u}" target="_blank" rel="noopener">🗺️ Tutto il giro in Google Maps${arr.length > 1 ? ` ${i + 1}/${arr.length}` : ''}</a>`).join('')}</div>` : ''; })()}
+  ${list.map(a => giroCard(a, t)).join('') || '<p class="muted">Nessun intervento per questa giornata.</p>'}`;
+}
+function giroCard(a, t){
+  const c = byId(db.clients, a.clientId) || {name:'—', address:'', phone:'', city:''};
+  const addr = a.address || c.address;
+  return `<div class="giro" style="border-left-color:${t ? t.color : '#999'}">
+    <div class="time">${a.time} <span class="badge ${a.status}">${STATUS[a.status]}</span></div>
+    <div><b>${esc(c.name)}</b> <small class="muted">${esc(c.codice)}</small></div>
+    <div class="muted">${esc(a.service)}</div>
+    ${a.notes ? `<div class="note">${esc(a.notes)}</div>` : ''}
+    <div class="links">
+      <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}" target="_blank" rel="noopener">📍 ${esc(addr)}</a>
+      ${c.phone ? `<a href="tel:${digitsOf(c.phone)}">📞 Chiama</a>` : ''}
+    </div>
+    <div class="stat">
+      <button class="ghost" onclick="setStatus('${a.id}','in_corso')">In corso</button>
+      <button class="ok" onclick="setStatus('${a.id}','completato')">Completato</button>
+    </div>
+    <div class="stat">
+      <button class="ghost" onclick="matsForm('${a.id}')">Materiali usati</button>
+      <button class="ghost" onclick="noteForm('${a.id}')">Nota</button>
+    </div>
+    <div class="stat">
+      <button class="ghost" onclick="firmaForm('${a.id}')">${a.signature ? 'Firma (già firmato)' : 'Firma del cliente'}</button>
+      <button class="ghost" onclick="rapporto('${a.id}')">Rapporto stampabile</button>
+    </div>
+  </div>`;
+}
+function noteForm(id){
+  const a = byId(db.appointments, id);
+  modal('Nota intervento', `<textarea id="f-notes">${esc(a.notes)}</textarea>`,
+    `<button class="ghost" onclick="closeModal()">Annulla</button><button onclick="saveNote('${id}')">Salva</button>`);
+}
+function saveNote(id){
+  byId(db.appointments, id).notes = val('f-notes').trim();
+  closeModal();
+  commit();
+}
+function firmaForm(id){
+  modal('Firma del cliente', `<p class="muted small">Chiedi al cliente di firmare nel riquadro con il dito o con il mouse.</p>
+    <canvas id="sig" width="600" height="220" style="width:100%;border:1px solid var(--line);border-radius:8px;touch-action:none;background:#fff"></canvas>
+    <label style="margin-top:10px">Firmato da<input id="sig-name" placeholder="Nome e cognome"></label>`,
+    `<button class="ghost" onclick="sigClear()">Cancella</button><button class="ghost" onclick="closeModal()">Annulla</button><button onclick="sigSave('${id}')">Salva firma</button>`);
+  const cv = document.getElementById('sig');
+  const ctx = cv.getContext('2d');
+  ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.strokeStyle = '#0f2b40';
+  let drawing = false;
+  const pos = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * cv.width / r.width, (e.clientY - r.top) * cv.height / r.height]; };
+  cv.onpointerdown = e => { drawing = true; const [x,y] = pos(e); ctx.beginPath(); ctx.moveTo(x,y); cv.setPointerCapture(e.pointerId); };
+  cv.onpointermove = e => { if (!drawing) return; const [x,y] = pos(e); ctx.lineTo(x,y); ctx.stroke(); };
+  cv.onpointerup = cv.onpointerleave = () => { drawing = false; };
+}
+function sigClear(){
+  const cv = document.getElementById('sig');
+  cv.getContext('2d').clearRect(0, 0, cv.width, cv.height);
+}
+function sigSave(id){
+  const cv = document.getElementById('sig');
+  const blank = document.createElement('canvas'); blank.width = cv.width; blank.height = cv.height;
+  const url = cv.toDataURL('image/png');
+  if (url === blank.toDataURL('image/png')) return alert('Il cliente non ha ancora firmato.');
+  const a = byId(db.appointments, id);
+  a.signature = url;
+  a.signedBy = val('sig-name').trim() || 'Cliente';
+  a.signedAt = new Date().toISOString();
+  logAct(`Firma raccolta per ${cname(a.clientId)} da ${a.signedBy}`);
+  closeModal();
+  commit();
+}
+// Rapporto stampabile: dati intervento, materiali usati e firma del cliente
+function rapporto(id){
+  const a = byId(db.appointments, id);
+  const c = byId(db.clients, a.clientId) || {};
+  const mats = (a.materials || []).map(m => { const it = byId(db.items, m.itemId); return `<tr><td>${esc(it ? it.name : '—')}</td><td>${m.qty} ${esc(it ? it.unit : '')}</td></tr>`; }).join('');
+  const w = window.open('', '_blank');
+  if (!w) return alert('Consenti i pop-up per stampare il rapporto.');
+  w.document.write(`<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Rapporto di intervento</title>
+    <style>body{font-family:Arial,sans-serif;margin:36px;color:#222}table{width:100%;border-collapse:collapse;margin:10px 0}td,th{border-bottom:1px solid #ddd;padding:7px;text-align:left}h1{color:#0b7bc1;margin:0}</style></head><body>
+    <h1>Rapporto di intervento</h1><p>${esc(db.settings.company)} · ${esc(db.settings.address)}</p>
+    <table><tr><th>Data</th><td>${fmtDate(a.date)} ore ${esc(a.time)}</td></tr>
+    <tr><th>Cliente</th><td>${esc(c.name)} (${esc(c.codice)})</td></tr>
+    <tr><th>Indirizzo</th><td>${esc(a.address || c.address)}</td></tr>
+    <tr><th>Servizio</th><td>${esc(a.service)}</td></tr>
+    <tr><th>Tecnico</th><td>${esc(tname(a.techId))}</td></tr>
+    <tr><th>Stato</th><td>${STATUS[a.status]}</td></tr>
+    <tr><th>Note</th><td>${esc(a.notes) || '—'}</td></tr></table>
+    <h3>Materiali utilizzati</h3><table>${mats || '<tr><td>Nessuno</td></tr>'}</table>
+    <h3>Firma del cliente</h3>${a.signature ? `<img src="${a.signature}" style="width:360px;border:1px solid #ddd"><p>${esc(a.signedBy)} · ${fmtStamp(a.signedAt)}</p>` : '<p>Non firmato</p>'}
+    </body></html>`);
+  w.document.close();
+  setTimeout(() => w.print(), 300);
+}
+
+/* ---------- CLIENTI ---------- */
+function clientList(){
+  const q = ui.cq.trim().toLowerCase();
+  return db.clients.filter(c => {
+    if (q && ![c.name, c.codice, c.phone, c.city, c.zona, c.address, c.email].join(' ').toLowerCase().includes(q)) return false;
+    if (ui.cCity !== 'all' && c.city !== ui.cCity) return false;
+    if (ui.cf === 'filtri') return c.prossimoCambio && c.prossimoCambio <= lastDayOf(ymd(new Date()).slice(0, 7));
+    if (ui.cf === 'monthly') return c.monthly;
+    if (ui.cf === 'wa') return c.whatsappOk;
+    if (ui.cf === 'nowa') return !c.whatsappOk;
+    return true;
+  });
+}
+const PAGE = 50;
+function viewClienti(){
+  const adm = isAdmin();
+  return `
+  <div class="top">
+    <div class="actions">
+      <input placeholder="Cerca per nome, codice, telefono, città..." value="${esc(ui.cq)}" oninput="ui.cq=this.value;ui.cPage=0;drawClients()" style="min-width:280px">
+      <select onchange="ui.cf=this.value;ui.cPage=0;drawClients()">
+        ${[['all','Tutti'],['filtri','Cambio filtri scaduto o del mese'],['monthly','Contratto mensile'],['wa','Consenso WhatsApp'],['nowa','Senza consenso WhatsApp']].map(([v,l]) => `<option value="${v}" ${ui.cf === v ? 'selected' : ''}>${l}</option>`).join('')}
+      </select>
+      <select onchange="ui.cCity=this.value;ui.cPage=0;drawClients()"><option value="all">Tutti i comuni</option>${[...new Set(db.clients.map(c => c.city).filter(Boolean))].sort().map(c => `<option ${ui.cCity === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select>
+    </div>
+    <div class="actions">${adm ? '<button onclick="clientForm()">+ Nuovo cliente</button>' : ''}<span class="muted small" id="c-count"></span></div>
+  </div>
+  <div class="card">
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Codice</th><th>Cliente</th><th>Contatti</th><th>Città</th><th>Cambio filtri</th><th>Stato</th><th></th></tr></thead>
+      <tbody id="c-rows"></tbody>
+    </table></div>
+    <div class="actions" style="justify-content:space-between;margin-top:10px">
+      <button class="ghost sm" onclick="pageClients(-1)">◀ Precedenti</button>
+      <span id="c-page" class="muted small"></span>
+      <button class="ghost sm" onclick="pageClients(1)">Successivi ▶</button>
+    </div>
+  </div>`;
+}
+function drawClients(){
+  const list = clientList();
+  const pages = Math.max(1, Math.ceil(list.length / PAGE));
+  ui.cPage = Math.min(Math.max(0, ui.cPage), pages - 1);
+  const slice = list.slice(ui.cPage * PAGE, ui.cPage * PAGE + PAGE);
+  const rows = document.getElementById('c-rows');
+  if (!rows) return;
+  rows.innerHTML = slice.map(clientRow).join('') || '<tr><td colspan="7" class="muted">Nessun cliente trovato</td></tr>';
+  document.getElementById('c-count').textContent = `${list.length} clienti su ${db.clients.length}`;
+  document.getElementById('c-page').textContent = `Pagina ${ui.cPage + 1} di ${pages}`;
+}
+function pageClients(n){ ui.cPage += n; drawClients(); }
+function clientRow(c){
+  const adm = isAdmin();
+  return `<tr>
+    <td data-label="Codice">${esc(c.codice)}</td>
+    <td data-label="Cliente"><b>${esc(c.name)}</b><br><small class="muted">${c.type === 'azienda' ? 'Azienda' : 'Privato'}</small></td>
+    <td data-label="Contatti">${esc(c.phone)}<br><small class="muted">${esc(c.email)}</small></td>
+    <td data-label="Città">${esc(c.city)}${c.zona && c.zona !== c.city ? `<br><small class="muted">${esc(c.zona)}</small>` : ''}</td>
+    <td data-label="Cambio filtri">${c.prossimoCambio ? fmtDate(c.prossimoCambio) + (c.prossimoCambio < ymd(new Date()) ? ' <span class="badge annullato">in ritardo</span>' : '') : '—'}<br><small class="muted">${c.filtroMesi ? 'ogni ' + c.filtroMesi + ' mesi' : ''}</small></td>
+    <td data-label="Stato">${c.monthly ? '<span class="badge completato">Mensile</span> ' : ''}${c.whatsappOk ? '<span class="badge programmato">WhatsApp</span>' : ''}</td>
+    <td class="acts"><button class="ghost sm" onclick="clientCard('${c.id}')">Scheda</button>${adm ? `<button class="ghost sm" onclick="clientForm('${c.id}')">Modifica</button><button class="danger sm" onclick="delClient('${c.id}')">✕</button>` : ''}</td>
+  </tr>`;
+}
+function clientCard(id){
+  const c = byId(db.clients, id);
+  const apps = db.appointments.filter(a => a.clientId === id).sort((a,b) => b.date.localeCompare(a.date)).slice(0,12);
+  const invs = isAdmin() ? db.invoices.filter(i => i.clientId === id).sort((a,b) => b.date.localeCompare(a.date)).slice(0,8) : [];
+  modal(`${esc(c.name)} <small class="muted">${esc(c.codice)}</small>`, `
+    <div class="grid2">
+      <div><b>Indirizzo</b><br>${esc(c.address)}${c.zona && c.zona !== c.city ? '<br><small class="muted">Zona ' + esc(c.zona) + '</small>' : ''}${c.lat ? `<br><a href="https://www.google.com/maps/search/?api=1&query=${c.lat},${c.lng}" target="_blank" rel="noopener">Apri in Google Maps</a>` : ''}</div>
+      <div><b>Cambio filtri</b><br>Ogni ${c.filtroMesi || '—'} mesi<br>Ultimo ${c.ultimoCambio ? fmtDate(c.ultimoCambio) : '—'} · prossimo <b>${c.prossimoCambio ? fmtDate(c.prossimoCambio) : '—'}</b></div>
+      <div><b>Contatti</b><br>${esc(c.phone)}<br>${esc(c.email) || '—'}</div>
+      ${isAdmin() ? `<div><b>Dati fiscali</b><br>P.IVA/CF ${esc(c.vat) || '—'}<br>SDI ${esc(c.sdi) || '—'} · PEC ${esc(c.pec) || '—'}</div>` : ''}
+      <div><b>Privacy</b><br>${c.whatsappOk ? 'Consenso WhatsApp dal ' + (c.consentDate ? fmtDate(c.consentDate) : '—') : 'Nessun consenso WhatsApp'}</div>
+    </div>
+    ${c.notes ? `<p class="note">${esc(c.notes)}</p>` : ''}
+    <h3 style="margin-top:14px">Ultimi interventi</h3>
+    ${apps.map(a => `<div class="rowline small">${fmtDate(a.date)} ${a.time} · ${esc(a.service)} · <span class="badge ${a.status}">${STATUS[a.status]}</span></div>`).join('') || '<p class="muted small">Nessuno</p>'}
+    ${isAdmin() ? `<h3 style="margin-top:14px">Fatture</h3>${invs.map(i => `<div class="rowline small">${esc(i.number)} · ${fmtDate(i.date)} · ${eur(i.totale)} · ${i.status}</div>`).join('') || '<p class="muted small">Nessuna</p>'}` : ''}`,
+    `<button class="ghost" onclick="closeModal()">Chiudi</button>${isAdmin() ? `<button class="ghost" onclick="gdprExport('${id}')">Esporta dati (privacy)</button><button class="danger" onclick="gdprErase('${id}')">Anonimizza</button>` : ''}`);
+}
+function gdprExport(id){
+  if (!requireAdmin()) return;
+  const c = byId(db.clients, id);
+  const data = {cliente:c, interventi:db.appointments.filter(a => a.clientId === id), fatture:db.invoices.filter(i => i.clientId === id)};
+  downloadFile(`dati-${c.codice}.json`, 'application/json', JSON.stringify(data, null, 2));
+}
+function gdprErase(id){
+  if (!requireAdmin()) return;
+  const c = byId(db.clients, id);
+  if (!confirm(`Anonimizzare ${c.name}? Nome, contatti e indirizzo verranno cancellati; interventi e fatture restano con il codice cliente.`)) return;
+  Object.assign(c, {name:'Cliente anonimizzato', phone:'', email:'', address:'', vat:'', sdi:'', pec:'', monthly:false, whatsappOk:false, consentDate:'', notes:''});
+  logAct(`Dati del cliente ${c.codice} anonimizzati su richiesta`);
+  closeModal();
+  commit();
+}
+function clientForm(id){
+  if (!requireAdmin()) return;
+  const c = id ? byId(db.clients, id) : {type:'privato', monthly:false, whatsappOk:false, city:'', cap:'', vat:'', sdi:'', pec:'', email:'', notes:''};
+  modal(id ? 'Modifica cliente' : 'Nuovo cliente', `
+    <div class="grid2">
+      <label>Nome / Ragione sociale<input id="f-name" value="${esc(c.name)}"></label>
+      <label>Tipo<select id="f-type"><option value="privato" ${c.type !== 'azienda' ? 'selected' : ''}>Privato</option><option value="azienda" ${c.type === 'azienda' ? 'selected' : ''}>Azienda</option></select></label>
+      <label>Telefono<input id="f-phone" value="${esc(c.phone)}"></label>
+      <label>Email<input id="f-email" value="${esc(c.email)}"></label>
+      <label class="full">Indirizzo<input id="f-address" value="${esc(c.address)}"></label>
+      <label>Città<input id="f-city" value="${esc(c.city)}"></label>
+      <label>CAP<input id="f-cap" value="${esc(c.cap)}"></label>
+      <label>P.IVA / CF<input id="f-vat" value="${esc(c.vat)}"></label>
+      <label>Codice SDI<input id="f-sdi" value="${esc(c.sdi)}"></label>
+      <label class="full">PEC<input id="f-pec" value="${esc(c.pec)}"></label>
+      <label>Cambio filtri ogni (mesi)<input type="number" min="1" id="f-ft" value="${c.filtroMesi || 6}"></label>
+      <label>Prossimo cambio filtri<input type="date" id="f-next" value="${c.prossimoCambio || ''}"></label>
+      <label class="chk"><input type="checkbox" id="f-monthly" ${c.monthly ? 'checked' : ''}> Contratto mensile</label>
+      <label class="chk"><input type="checkbox" id="f-wa" ${c.whatsappOk ? 'checked' : ''}> Consenso a ricevere messaggi WhatsApp</label>
+      <label class="full">Note<textarea id="f-notes">${esc(c.notes)}</textarea></label>
+    </div>`,
+    `<button class="ghost" onclick="closeModal()">Annulla</button><button onclick="saveClient('${id || ''}')">Salva</button>`);
+}
+function saveClient(id){
+  if (!requireAdmin()) return;
+  const name = val('f-name').trim();
+  if (!name) return alert('Inserisci il nome.');
+  const wa = chk('f-wa');
+  const data = {name, type:val('f-type'), phone:val('f-phone').trim(), email:val('f-email').trim(), address:val('f-address').trim(),
+    city:val('f-city').trim(), cap:val('f-cap').trim(), vat:val('f-vat').trim(), sdi:val('f-sdi').trim(), pec:val('f-pec').trim(),
+    monthly:chk('f-monthly'), whatsappOk:wa, notes:val('f-notes').trim(), filtroMesi:+val('f-ft') || 6, prossimoCambio:val('f-next')};
+  // Demo: posizione indicativa dal comune. Nella versione definitiva l'indirizzo viene convertito in coordinate esatte.
+  const old = id ? byId(db.clients, id) : null;
+  if (!old || !old.lat || old.city !== data.city) { const g = geoGuess(data.city); if (g) Object.assign(data, g, {zona: data.city}); }
+  if (id) {
+    const c = byId(db.clients, id);
+    if (wa && !c.whatsappOk) data.consentDate = ymd(new Date());
+    Object.assign(c, data);
+  } else {
+    const n = maxCode() + 1;
+    db.clients.push({id:'c' + uid(), codice:'C' + pad(n, 5), ...data, consentDate: wa ? ymd(new Date()) : ''});
+  }
+  if (!data.lat && !(old && old.lat)) alert('Comune non presente nella demo: il cliente non apparirà sulla mappa dei giri.');
+  closeModal();
+  commit();
+}
+function delClient(id){
+  if (!requireAdmin()) return;
+  if (db.appointments.some(a => a.clientId === id) || db.invoices.some(i => i.clientId === id))
+    return alert('Il cliente ha interventi o fatture: usa "Anonimizza" dalla scheda.');
+  if (!confirm('Eliminare il cliente?')) return;
+  db.clients = db.clients.filter(c => c.id !== id);
+  commit();
+}
+
+/* ---------- MAGAZZINO ---------- */
+function viewMagazzino(){
+  const adm = isAdmin();
+  const ord = reorderList();
+  const movs = [...db.movements].reverse().slice(0, 15);
+  const scanned = ui.scanned && byId(db.items, ui.scanned);
+  return `
+  <div class="scan">
+    <b>Scanner codici</b>
+    <p class="muted small">Collega un lettore di codici a barre oppure digita il codice e premi Invio: l'articolo si apre subito per carico o scarico.</p>
+    <div class="actions">
+      <input id="scan" placeholder="Codice articolo (es. MAT-001)" style="min-width:260px" onkeydown="if(event.key==='Enter'){scanItem(this.value);this.value=''}">
+      <button class="ghost" onclick="invForm()">Inventario fisico</button>
+      ${adm ? '<button onclick="itemForm()">+ Articolo</button>' : ''}
+    </div>
+    ${scanned ? scanCard(scanned) : ''}
+  </div>
+  <div class="kpis">
+    ${kpi('Articoli', db.items.length)}
+    ${adm ? kpi('Valore a costo', eur(db.items.reduce((s,i) => s + i.qty * i.cost, 0))) : ''}
+    ${kpi('Da riordinare', ord.length, ord.length ? 'warn' : '')}
+  </div>
+  <div class="card">
+    <div class="top"><h3 style="margin:0">Ordini suggeriti ai fornitori</h3>
+      ${ord.length ? '<button class="ghost sm" onclick="exportOrderCsv()">Esporta ordine</button>' : ''}</div>
+    ${ord.length ? `<div class="tbl-wrap"><table><thead><tr><th>Fornitore</th><th>Articolo</th><th class="r">Giacenza</th><th class="r">Da ordinare</th></tr></thead><tbody>
+      ${ord.map(i => `<tr><td>${esc(i.supplier)}</td><td>${esc(i.name)}</td><td class="r">${i.qty} ${esc(i.unit)}</td><td class="r"><b>${i.daOrdinare} ${esc(i.unit)}</b></td></tr>`).join('')}
+    </tbody></table></div>` : '<p class="muted">Tutte le giacenze sono sopra la scorta minima.</p>'}
+  </div>
+  <div class="card">
+    <div class="top"><h3 style="margin:0">Giacenze</h3>
+      <input placeholder="Filtra articoli..." value="${esc(ui.stockQ)}" oninput="ui.stockQ=this.value;drawStock()"></div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Codice</th><th>Articolo</th><th>Categoria</th><th class="r">Giacenza</th><th class="r">Scorta min.</th><th>Stato</th>${adm ? '<th class="r">Costo</th><th class="r">Prezzo</th>' : ''}<th></th></tr></thead>
+      <tbody id="stock-rows"></tbody>
+    </table></div>
+  </div>
+  <div class="card"><h3>Ultimi movimenti</h3><div class="tbl-wrap"><table>
+    <thead><tr><th>Data</th><th>Articolo</th><th>Tipo</th><th class="r">Q.tà</th><th>Note</th></tr></thead>
+    <tbody>${movs.map(m => { const it = byId(db.items, m.itemId) || {name:'—'}; return `<tr><td>${fmtDate(m.date)}</td><td>${esc(it.name)}</td><td>${m.type}</td><td class="r">${m.qty > 0 ? '+' : ''}${m.qty}</td><td class="muted">${esc(m.note)}</td></tr>`; }).join('') || '<tr><td colspan="5" class="muted">Nessun movimento</td></tr>'}</tbody>
+  </table></div></div>`;
+}
+function drawStock(){
+  const tb = document.getElementById('stock-rows');
+  if (!tb) return;
+  const q = ui.stockQ.toLowerCase();
+  const adm = isAdmin();
+  tb.innerHTML = db.items.filter(i => !q || (i.name + i.code + i.category).toLowerCase().includes(q)).map(i => {
+    const st = i.qty <= 0 ? '<span class="badge annullato">Esaurito</span>'
+      : i.qty <= i.min ? '<span class="badge in_corso">Sotto scorta</span>' : '<span class="badge completato">OK</span>';
+    return `<tr>
+      <td>${esc(i.code)}</td>
+      <td><b>${esc(i.name)}</b><br><small class="muted">${esc(i.supplier)}</small></td>
+      <td>${esc(i.category)}</td>
+      <td class="r"><b>${i.qty}</b> ${esc(i.unit)}</td>
+      <td class="r">${i.min}</td>
+      <td>${st}</td>
+      ${adm ? `<td class="r">${eur(i.cost)}</td><td class="r">${eur(i.price)}</td>` : ''}
+      <td class="acts"><button class="sm" onclick="moveForm('${i.id}','carico')">+ Carico</button><button class="ghost sm" onclick="moveForm('${i.id}','scarico')">− Scarico</button>${adm ? `<button class="ghost sm" onclick="itemForm('${i.id}')">Modifica</button><button class="danger sm" onclick="delItem('${i.id}')">✕</button>` : ''}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="8" class="muted">Nessun articolo</td></tr>';
+}
+function scanItem(code){
+  const it = db.items.find(i => i.code.toLowerCase() === code.trim().toLowerCase());
+  if (!it) return alert('Articolo non trovato: ' + code);
+  ui.scanned = it.id;
+  render();
+}
+function scanCard(it){
+  const st = it.qty <= 0 ? 'Esaurito' : it.qty <= it.min ? 'Sotto scorta' : 'OK';
+  return `<div class="card" style="margin:12px 0 0">
+    <div><b>${esc(it.name)}</b> <small class="muted">${esc(it.code)}</small></div>
+    <div class="muted small">Giacenza attuale: <b>${it.qty} ${esc(it.unit)}</b> · scorta minima ${it.min} · ${st}</div>
+    <div class="actions" style="margin-top:10px">
+      <label style="flex-direction:row;align-items:center;gap:6px">Quantità<input id="scan-qty" type="number" min="0" step="0.5" value="1" style="width:100px"></label>
+      <button onclick="quickMove('${it.id}','carico')">+ Carico</button>
+      <button class="ghost" onclick="quickMove('${it.id}','scarico')">− Scarico</button>
+      <button class="ghost sm" onclick="ui.scanned=null;render()">Chiudi</button>
+    </div>
+  </div>`;
+}
+function quickMove(id, type){
+  const q = +val('scan-qty');
+  if (!q) return;
+  moveStock(id, type, q, 'Movimento da scanner');
+}
+function itemForm(id){
+  if (!requireAdmin()) return;
+  const i = id ? byId(db.items, id) : {unit:'pz', min:0, cost:0, price:0, code:'', category:'', name:'', supplier:''};
+  modal(id ? 'Modifica articolo' : 'Nuovo articolo', `
+    <div class="grid2">
+      <label>Codice<input id="f-code" value="${esc(i.code)}"></label>
+      <label>Categoria<input id="f-cat" value="${esc(i.category)}"></label>
+      <label class="full">Nome articolo<input id="f-name" value="${esc(i.name)}"></label>
+      <label>Unità di misura<input id="f-unit" value="${esc(i.unit)}"></label>
+      <label>Scorta minima<input type="number" id="f-min" value="${i.min}"></label>
+      <label>Costo d'acquisto (€)<input type="number" step="0.01" id="f-cost" value="${i.cost}"></label>
+      <label>Prezzo di vendita (€)<input type="number" step="0.01" id="f-price" value="${i.price}"></label>
+      <label class="full">Fornitore<input id="f-supplier" value="${esc(i.supplier)}"></label>
+      ${id ? '' : '<label class="full">Giacenza iniziale<input type="number" id="f-qty" value="0"></label>'}
+    </div>`,
+    `<button class="ghost" onclick="closeModal()">Annulla</button><button onclick="saveItem('${id || ''}')">Salva</button>`);
+}
+function saveItem(id){
+  if (!requireAdmin()) return;
+  const name = val('f-name').trim();
+  if (!name) return alert('Inserisci il nome dell\'articolo.');
+  const data = {code:val('f-code').trim(), name, category:val('f-cat').trim(), unit:val('f-unit').trim() || 'pz',
+    min:+val('f-min') || 0, cost:+val('f-cost') || 0, price:+val('f-price') || 0, supplier:val('f-supplier').trim()};
+  if (id) Object.assign(byId(db.items, id), data);
+  else db.items.push({id:uid(), qty:+val('f-qty') || 0, ...data});
+  closeModal();
+  commit();
+}
+function delItem(id){
+  if (!requireAdmin()) return;
+  if (!confirm('Eliminare l\'articolo dal magazzino?')) return;
+  db.items = db.items.filter(i => i.id !== id);
+  commit();
+}
+function moveForm(id, type){
+  const i = byId(db.items, id);
+  modal(`${type === 'carico' ? 'Carico' : 'Scarico'} - ${esc(i.name)}`, `
+    <div class="grid2">
+      <label>Quantità (${esc(i.unit)})<input type="number" min="0" step="0.5" id="f-qty" value="1"></label>
+      <label>Nota<input id="f-note" placeholder="es. fornitura del mese"></label>
+    </div>`,
+    `<button class="ghost" onclick="closeModal()">Annulla</button><button onclick="saveMove('${id}','${type}')">Conferma</button>`);
+}
+function saveMove(id, type){
+  const q = +val('f-qty');
+  if (!q) return;
+  moveStock(id, type, q, val('f-note').trim());
+  closeModal();
+}
+function invForm(){
+  modal('Inventario fisico', `
+    <p class="muted small">Inserisci le quantità contate. Lascia vuoto ciò che non hai contato. Alla conferma le giacenze si allineano e le differenze restano nei movimenti.</p>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Articolo</th><th class="r">Sistema</th><th class="r">Contato</th></tr></thead>
+      <tbody>${db.items.map(i => `<tr><td>${esc(i.name)}<br><small class="muted">${esc(i.code)}</small></td><td class="r">${i.qty} ${esc(i.unit)}</td><td class="r"><input type="number" min="0" step="0.5" data-inv="${i.id}" style="width:110px"></td></tr>`).join('')}</tbody>
+    </table></div>`,
+    `<button class="ghost" onclick="closeModal()">Annulla</button><button onclick="applyInv()">Conferma inventario</button>`);
+}
+function applyInv(){
+  let n = 0;
+  document.querySelectorAll('[data-inv]').forEach(inp => {
+    if (inp.value === '') return;
+    const it = byId(db.items, inp.dataset.inv);
+    const diff = round2(+inp.value - it.qty);
+    if (diff !== 0) { moveStock(it.id, diff > 0 ? 'carico' : 'scarico', Math.abs(diff), 'Rettifica da inventario fisico', true); n++; }
+  });
+  logAct(`Inventario fisico: ${n} articoli rettificati`);
+  closeModal();
+  commit();
+  alert(`Inventario confermato: ${n} articoli rettificati.`);
+}
+function exportOrderCsv(){
+  const rows = [['Fornitore','Codice','Articolo','Giacenza','Da ordinare','Unita']]
+    .concat(reorderList().sort((a,b) => String(a.supplier).localeCompare(String(b.supplier)))
+      .map(i => [i.supplier, i.code, i.name, i.qty, i.daOrdinare, i.unit]));
+  downloadFile('ordine-fornitori-' + ymd(new Date()) + '.csv', 'text/csv;charset=utf-8', csvOf(rows));
+}
+
+/* ---------- PROMEMORIA ---------- */
+function reminderMsg(a){
+  const c = byId(db.clients, a.clientId) || {name:''};
+  return db.settings.reminderTpl
+    .replaceAll('{nome}', c.name).replaceAll('{data}', fmtDate(a.date)).replaceAll('{ora}', a.time)
+    .replaceAll('{servizio}', a.service).replaceAll('{tecnico}', tname(a.techId)).replaceAll('{sito}', db.settings.site);
+}
+function viewPromemoria(){
+  const dom = addDays(1);
+  const apps = db.appointments.filter(a => a.date === dom && a.status === 'programmato').sort(byTime);
+  const sent = db.reminders[dom] || {};
+  return `<div class="card"><div class="top"><div><b>Interventi di domani (${fmtDate(dom)})</b><br><small class="muted">${apps.length} promemoria · ${Object.keys(sent).length} già inviati</small></div></div>
+  <div class="tbl-wrap"><table><thead><tr><th>Ora</th><th>Cliente</th><th>Tecnico</th><th>Telefono</th><th>Messaggio</th><th></th></tr></thead><tbody>
+  ${apps.map(a => {
+    const c = byId(db.clients, a.clientId) || {};
+    const ok = c.whatsappOk && digitsOf(c.phone);
+    return `<tr><td>${a.time}</td><td><b>${esc(c.name)}</b></td><td>${esc(tname(a.techId))}</td><td>${esc(c.phone)}</td>
+      <td class="small muted" style="max-width:260px">${esc(reminderMsg(a))}</td>
+      <td class="acts">${sent[a.id] ? '<span class="badge completato">Inviato</span>' : ok ? `<button class="sm" onclick="sendReminder('${a.id}')">Apri WhatsApp</button>` : '<span class="muted small">Senza consenso</span>'}</td></tr>`;
+  }).join('') || '<tr><td colspan="6" class="muted">Nessun intervento programmato per domani</td></tr>'}
+  </tbody></table></div></div>`;
+}
+function sendReminder(id){
+  const dom = addDays(1);
+  const a = byId(db.appointments, id);
+  const c = byId(db.clients, a.clientId);
+  openExt(`https://wa.me/${digitsOf(c.phone)}?text=${encodeURIComponent(reminderMsg(a))}`);
+  db.reminders[dom] = {...(db.reminders[dom] || {}), [id]: true};
+  commit();
+}
+
+/* ---------- COMUNICAZIONI (WhatsApp gratuito) ---------- */
+function waMessage(c, ym){
+  const apps = completedIn(c.id, ym);
+  const total = apps.reduce((s,a) => s + appTotal(a), 0);
+  return db.settings.waTemplate
+    .replaceAll('{nome}', c.name).replaceAll('{mese}', mesLabel(ym))
+    .replaceAll('{importo}', eur(total)).replaceAll('{interventi}', apps.length).replaceAll('{sito}', db.settings.site);
+}
+function waList(ym){
+  const sent = db.sentWa[ym] || [];
+  return db.clients.filter(c => c.whatsappOk && digitsOf(c.phone) && (!ui.waOnly || c.monthly) && (!ui.waHideSent || !sent.includes(c.id)));
+}
+function viewWa(){
+  const ym = ui.waMonth;
+  const sent = db.sentWa[ym] || [];
+  const list = waList(ym);
+  return `
+  <div class="top"><div class="actions"><label>Mese di riferimento <input type="month" value="${ym}" onchange="ui.waMonth=this.value;render()"></label></div></div>
+  <div class="card"><h3>Modello messaggio</h3>
+    <p class="muted small" style="margin-top:0">Segnaposto: {nome} {mese} {importo} {interventi} {sito} · il modello si modifica in Impostazioni.</p>
+    <div class="actions">
+      <label class="chk"><input type="checkbox" ${ui.waOnly ? 'checked' : ''} onchange="ui.waOnly=this.checked;render()"> Solo contratti mensili</label>
+      <label class="chk"><input type="checkbox" ${ui.waHideSent ? 'checked' : ''} onchange="ui.waHideSent=this.checked;render()"> Nascondi già inviati</label>
+    </div>
+  </div>
+  <div class="card"><h3>Invio gratuito con WhatsApp normale</h3>
+    <p class="muted small" style="margin-top:0">Il gestionale non può inviare messaggi da solo con WhatsApp gratuito. Ogni clic apre la chat del cliente con il testo già scritto: tu premi Invia.</p>
+    <div class="actions">
+      <button class="big" style="width:auto" onclick="sendNext('${ym}')" ${list.length ? '' : 'disabled'}>Apri la chat successiva (${list.length} da inviare)</button>
+      <button class="ghost" onclick="exportContactsVcf()">Esporta contatti (.vcf) per lista WhatsApp</button>
+      <button class="ghost" onclick="resetSent('${ym}')">Azzera invii del mese</button>
+    </div>
+    <p class="muted small">Lista di trasmissione: importa il .vcf nel telefono, poi in WhatsApp crea una lista con quei contatti e invia il messaggio a tutti con un tocco. Usalo solo per i clienti che hanno dato il consenso.</p>
+  </div>
+  <div class="card"><h3>Ancora da inviare questo mese: ${list.length} · già inviati: ${sent.length}</h3>
+    <div class="tbl-wrap"><table><thead><tr><th>Cliente</th><th>Telefono</th><th class="r">Interventi nel mese</th><th></th></tr></thead><tbody>
+    ${list.slice(0, 100).map(c => { const apps = completedIn(c.id, ym); return `<tr><td><b>${esc(c.name)}</b>${c.monthly ? '<br><small class="muted">Contratto mensile</small>' : ''}</td><td>${esc(c.phone)}</td><td class="r">${apps.length} · ${eur(apps.reduce((s,a) => s + appTotal(a), 0))}</td><td class="acts"><button class="sm" onclick="sendWa('${c.id}','${ym}')">Apri chat</button></td></tr>`; }).join('') || '<tr><td colspan="4" class="muted">Nessun cliente da contattare</td></tr>'}
+    </tbody></table></div>
+    ${list.length > 100 ? `<p class="muted small">Mostrati i primi 100. Usa "Apri la chat successiva" per proseguire.</p>` : ''}
+  </div>`;
+}
+function sendWa(cid, ym){
+  const c = byId(db.clients, cid);
+  openExt(`https://wa.me/${digitsOf(c.phone)}?text=${encodeURIComponent(waMessage(c, ym))}`);
+  db.sentWa[ym] = [...new Set([...(db.sentWa[ym] || []), cid])];
+  commit();
+}
+function sendNext(ym){
+  const next = waList(ym)[0];
+  if (!next) return alert('Nessun altro cliente da contattare per questo mese.');
+  sendWa(next.id, ym);
+}
+function resetSent(ym){
+  if (!confirm('Azzerare la lista degli invii di questo mese?')) return;
+  delete db.sentWa[ym];
+  commit();
+}
+async function exportContactsVcf(){
+  const list = db.clients.filter(c => c.whatsappOk && digitsOf(c.phone) && c.consentDate);
+  const txt = list.map(c => `BEGIN:VCARD\nVERSION:3.0\nFN:${c.name}\nTEL;TYPE=CELL:${c.phone}\nEND:VCARD`).join('\n');
+  await dlReady;
+  // La pagina su claude.ai non può salvare file .vcf: si salva come .txt da rinominare
+  if (dlApi) alert('Il file verrà salvato come .txt: dopo il salvataggio rinominalo in .vcf per importarlo nella rubrica del telefono.');
+  downloadFile(dlApi ? 'contatti-clienti-watergold.txt' : 'contatti-clienti-watergold.vcf', 'text/vcard;charset=utf-8', txt);
+}
+
+/* ---------- FATTURE ---------- */
+function viewFatture(){
+  const ym = ui.invMonth;
+  const pend = pendingAppts(ym);
+  const nClients = new Set(pend.map(a => a.clientId)).size;
+  const invs = [...db.invoices].sort((a,b) => b.number.localeCompare(a.number)).slice(0, 300);
+  return `
+  <div class="top"><div class="actions">
+    <label>Mese di riferimento <input type="month" value="${ym}" onchange="ui.invMonth=this.value;render()"></label>
+    <button class="ghost" onclick="exportInvoicesCsv()">Esporta per commercialista</button>
+  </div></div>
+  <div class="card"><h3>Fatturazione automatica - ${mesLabel(ym)}</h3>
+    <p>${pend.length} interventi completati non ancora fatturati, per ${nClients} clienti.</p>
+    <button onclick="genInvoices('${ym}')" ${pend.length ? '' : 'disabled'}>Genera le fatture del mese</button>
+    <p class="muted small">Una fattura per cliente con gli interventi completati e i materiali usati. Il regime fiscale e i codici SDI sono in Impostazioni e nell'anagrafica.</p>
+  </div>
+  <div class="card"><h3>Fatture emesse (ultime 300)</h3><div class="tbl-wrap"><table>
+    <thead><tr><th>Numero</th><th>Data</th><th>Cliente</th><th class="r">Imponibile</th><th class="r">Totale IVA incl.</th><th>Stato</th><th></th></tr></thead>
+    <tbody>${invs.map(i => `<tr>
+      <td><b>${esc(i.number)}</b></td><td>${fmtDate(i.date)}</td><td>${esc(cname(i.clientId))}</td>
+      <td class="r">${eur(i.imponibile)}</td><td class="r"><b>${eur(i.totale)}</b></td>
+      <td><button class="sm ${i.status === 'pagata' ? 'ok' : 'ghost'}" onclick="togglePaid('${i.id}')">${i.status === 'pagata' ? 'Pagata' : 'Da incassare'}</button></td>
+      <td class="acts"><button class="ghost sm" onclick="printInvoice('${i.id}')">Stampa</button><button class="danger sm" onclick="delInv('${i.id}')">✕</button></td>
+    </tr>`).join('') || '<tr><td colspan="7" class="muted">Nessuna fattura</td></tr>'}</tbody>
+  </table></div></div>`;
+}
+function genInvoices(ym){
+  if (!requireAdmin()) return;
+  const n = autoInvoice(ym);
+  logAct(`Fatture di ${mesLabel(ym)} generate manualmente: ${n}`);
+  commit();
+  alert(`${n} fatture create per ${mesLabel(ym)}.`);
+}
+function invoiceAction(){}
+function togglePaid(id){
+  if (!requireAdmin()) return;
+  const i = byId(db.invoices, id);
+  i.status = i.status === 'pagata' ? 'da incassare' : 'pagata';
+  commit();
+}
+function delInv(id){
+  if (!requireAdmin()) return;
+  if (!confirm('Eliminare la fattura? Gli interventi torneranno da fatturare.')) return;
+  db.invoices = db.invoices.filter(i => i.id !== id);
+  commit();
+}
+function exportInvoicesCsv(){
+  if (!requireAdmin()) return;
+  const rows = [['Numero','Data','Cliente','Codice cliente','P.IVA/CF','Codice SDI','PEC','Imponibile','Aliquota IVA','IVA','Totale','Stato']]
+    .concat([...db.invoices].sort((a,b) => a.number.localeCompare(b.number)).map(i => {
+      const c = byId(db.clients, i.clientId) || {};
+      const iva = round2(i.totale - i.imponibile);
+      return [i.number, fmtDate(i.date), c.name, c.codice, c.vat, c.sdi, c.pec, i.imponibile.toFixed(2).replace('.', ','),
+        i.ivaRate, iva.toFixed(2).replace('.', ','), i.totale.toFixed(2).replace('.', ','), i.status];
+    }));
+  downloadFile('fatture-' + ymd(new Date()) + '.csv', 'text/csv;charset=utf-8', csvOf(rows));
+}
+function printInvoice(id){
+  const inv = byId(db.invoices, id), c = byId(db.clients, inv.clientId) || {}, s = db.settings;
+  const rows = inv.lines.map(l => `<tr><td>${esc(l.desc)}</td><td class="r">${l.qty}</td><td class="r">${eur(l.price)}</td><td class="r">${eur(round2(l.qty * l.price))}</td></tr>`).join('');
+  const iva = round2(inv.imponibile * inv.ivaRate / 100);
+  const w = window.open('', '_blank');
+  if (!w) return alert('Consenti i pop-up per stampare la fattura.');
+  w.document.write(`<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Fattura ${esc(inv.number)}</title>
+    <style>body{font-family:Arial,sans-serif;margin:40px;color:#222}table{width:100%;border-collapse:collapse;margin-top:20px}td,th{border-bottom:1px solid #ddd;padding:8px;text-align:left}.r{text-align:right}.tot{width:320px;margin-left:auto}.tot td{border:0}h1{color:#0b7bc1;margin:0}</style>
+    </head><body>
+    <h1>${esc(s.company)}</h1>
+    <p>${esc(s.address)}<br>P.IVA ${esc(s.vat)} · ${esc(s.regime)}<br>${esc(s.site)}</p>
+    <h2>Fattura n. ${esc(inv.number)} del ${fmtDate(inv.date)}</h2>
+    <p><b>Cliente:</b> ${esc(c.name)} (${esc(c.codice)})<br>${esc(c.address)}${c.vat ? '<br>P.IVA/CF ' + esc(c.vat) : ''}</p>
+    <table><thead><tr><th>Descrizione</th><th class="r">Q.tà</th><th class="r">Prezzo</th><th class="r">Importo</th></tr></thead><tbody>${rows}</tbody></table>
+    <table class="tot">
+      <tr><td>Imponibile</td><td class="r">${eur(inv.imponibile)}</td></tr>
+      <tr><td>IVA ${inv.ivaRate}%</td><td class="r">${eur(iva)}</td></tr>
+      <tr><td><b>Totale</b></td><td class="r"><b>${eur(inv.totale)}</b></td></tr>
+    </table></body></html>`);
+  w.document.close();
+  setTimeout(() => w.print(), 300);
+}
+
+/* ---------- REPORT ---------- */
+function viewReport(){
+  const months = [];
+  for (let i = 5; i >= 0; i--) { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - i); months.push(ymd(d).slice(0,7)); }
+  const vals = months.map(m => db.invoices.filter(i => monthOf(i.date) === m).reduce((s,i) => s + i.imponibile, 0));
+  const max = Math.max(1, ...vals);
+  const bars = months.map((m,k) => `<div class="bar-col"><small class="muted">${eur(vals[k])}</small><div class="bar" style="height:${Math.round(vals[k] / max * 170)}px"></div><small>${MESI[+m.slice(5) - 1].slice(0,3)}</small></div>`).join('');
+  const ym = ymd(new Date()).slice(0,7);
+  const tRows = tecnici().map(t => {
+    const apps = db.appointments.filter(a => a.techId === t.id && monthOf(a.date) === ym && a.status === 'completato');
+    const ore = apps.reduce((s,a) => s + a.duration, 0) / 60;
+    return `<tr><td>${esc(t.name)}</td><td class="r">${apps.length}</td><td class="r">${ore.toFixed(1)} h</td></tr>`;
+  }).join('');
+  const byC = {};
+  db.invoices.forEach(i => { byC[i.clientId] = (byC[i.clientId] || 0) + i.imponibile; });
+  const top = Object.entries(byC).sort((a,b) => b[1] - a[1]).slice(0, 10)
+    .map(([id,v]) => `<tr><td>${esc(cname(id))}</td><td class="r">${eur(v)}</td></tr>`).join('');
+  return `
+  <div class="card"><h3>Fatturato imponibile ultimi 6 mesi</h3><div class="bars">${bars}</div></div>
+  <div class="grid2">
+    <div class="card"><h3>Carico tecnici (${mesLabel(ym)})</h3><div class="tbl-wrap"><table>
+      <thead><tr><th>Tecnico</th><th class="r">Interventi completati</th><th class="r">Ore</th></tr></thead><tbody>${tRows}</tbody></table></div></div>
+    <div class="card"><h3>Top 10 clienti per fatturato</h3><div class="tbl-wrap"><table>
+      <thead><tr><th>Cliente</th><th class="r">Imponibile</th></tr></thead><tbody>${top || '<tr><td colspan="2" class="muted">Nessun dato</td></tr>'}</tbody></table></div></div>
+  </div>`;
+}
+
+/* ---------- AUTOMAZIONI ---------- */
+function viewAuto(){
+  return `
+  <div class="card"><div class="top"><h3 style="margin:0">Regole attive</h3><button onclick="runNow()">Esegui automazioni ora</button></div>
+    <div class="stack">
+      ${RULES.map(([k, t, d]) => `<label class="chk" style="align-items:flex-start">
+        <input type="checkbox" ${db.settings.rules[k] ? 'checked' : ''} onchange="setRule('${k}',this.checked)" style="margin-top:3px">
+        <span><b>${t}</b><br><small class="muted">${d}</small></span></label>`).join('')}
+    </div>
+    <p class="muted small">Le automazioni girano all'apertura del gestionale, una volta al giorno. Il pulsante le esegue subito.</p>
+  </div>
+  <div class="card"><h3>Registro attività</h3>
+    ${db.log.slice(0, 60).map(l => `<div class="rowline small"><span class="muted">${fmtStamp(l.t)}</span> · ${esc(l.text)}</div>`).join('') || '<p class="muted">Nessuna attività registrata</p>'}
+  </div>`;
+}
+
+/* ---------- DATI E FOGLI ---------- */
+function viewDati(){
+  return `
+  <div class="grid2">
+    <div class="card"><h3>Clienti: Excel e Google Sheets</h3>
+      <p class="muted small">Scarica l'anagrafica, modificala nel foglio e reimportala. Il gestionale riconosce ogni cliente dal codice (C00001) e aggiorna solo ciò che è cambiato. I clienti con un telefono o una P.IVA già presenti vengono segnalati come duplicati e non importati.</p>
+      <div class="actions">
+        <button onclick="exportClients('csv')">Clienti CSV (per Google Sheets)</button>
+        <button class="ghost" onclick="exportClients('xlsx')">Clienti Excel (.xlsx)</button>
+      </div>
+      <div class="actions" style="margin-top:10px"><label class="btn">Importa clienti (CSV o Excel)<input type="file" accept=".csv,.xlsx,.xls" hidden onchange="importClients(this)"></label></div>
+      <p class="muted small">Google Sheets: File → Importa → Carica il CSV, separatore punto e virgola.</p>
+    </div>
+    <div class="card"><h3>Magazzino</h3>
+      <p class="muted small">Giacenze e scorte per il foglio di calcolo o per l'ufficio acquisti.</p>
+      <div class="actions"><button onclick="exportStock('xlsx')">Giacenze Excel (.xlsx)</button><button class="ghost" onclick="exportStock('csv')">Giacenze CSV</button></div>
+    </div>
+  </div>
+  <div class="card"><h3>Backup completo</h3>
+    <p class="muted small">Contiene tutti i dati: clienti, interventi, fatture, magazzino, utenti e registro. Conservalo fuori dal computer.</p>
+    <div class="actions">
+      <button onclick="exportBackup()">Scarica backup (.json)</button>
+      <label class="btn ghost">Ripristina backup<input type="file" accept=".json" hidden onchange="importBackup(this)"></label>
+      <button class="danger" onclick="resetDemo()">Ricarica i dati demo</button>
+    </div>
+  </div>`;
+}
+function exportClients(fmt){
+  if (!requireAdmin()) return;
+  const rows = [['codice','nome','tipo','telefono','email','indirizzo','cap','citta','zona','piva','sdi','pec','mensile','consenso_whatsapp','filtri_ogni_mesi','ultimo_cambio','prossimo_cambio','note']]
+    .concat(db.clients.map(c => [c.codice, c.name, c.type, c.phone, c.email, c.address, c.cap, c.city, c.zona, c.vat, c.sdi, c.pec,
+      c.monthly ? 'si' : 'no', c.whatsappOk ? 'si' : 'no', c.filtroMesi, c.ultimoCambio, c.prossimoCambio, c.notes]));
+  writeTable(rows, 'clienti-watergold-' + ymd(new Date()), fmt);
+}
+function exportStock(fmt){
+  const rows = [['codice','articolo','categoria','giacenza','unita','scorta_minima','fornitore']]
+    .concat(db.items.map(i => [i.code, i.name, i.category, i.qty, i.unit, i.min, i.supplier]));
+  writeTable(rows, 'magazzino-watergold-' + ymd(new Date()), fmt);
+}
+function importClients(input){
+  if (!requireAdmin()) return;
+  const f = input.files[0];
+  if (!f) return;
+  const isX = /\.xlsx?$/i.test(f.name);
+  const reader = new FileReader();
+  reader.onload = () => {
+    let rows;
+    try {
+      if (isX) {
+        if (typeof XLSX === 'undefined') throw new Error('libreria Excel non caricata (serve la connessione internet). Usa il CSV.');
+        const wb = XLSX.read(reader.result, {type:'array'});
+        rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, defval:''});
+      } else rows = parseCsv(reader.result);
+    } catch(e) { return alert('Import non riuscito: ' + e.message); }
+    planImport(rows);
+  };
+  if (isX) reader.readAsArrayBuffer(f); else reader.readAsText(f);
+  input.value = '';
+}
+function planImport(rows){
+  if (rows.length < 2) return alert('Il file è vuoto o non contiene righe di dati.');
+  const H = rows[0].map(normH);
+  const col = (...names) => { for (const n of names) { const i = H.indexOf(n); if (i >= 0) return i; } return -1; };
+  const ix = {codice:col('codice','codice_cliente','id'), name:col('nome','ragione_sociale','nome_cliente','cliente'), type:col('tipo'),
+    phone:col('telefono','cellulare','tel'), email:col('email','mail'), address:col('indirizzo'), cap:col('cap'),
+    city:col('citta','comune','localita'), vat:col('piva','p_iva','partita_iva','cf','codice_fiscale'), sdi:col('sdi','codice_sdi'),
+    pec:col('pec'), monthly:col('mensile','contratto_mensile'), wa:col('consenso_whatsapp','whatsapp'), notes:col('note')};
+  if (ix.name < 0) return alert('Colonna "nome" non trovata. Intestazioni lette: ' + H.join(', '));
+  const plan = {upd:[], add:[], dup:[], err:0};
+  const phones = new Set(db.clients.map(c => digitsOf(c.phone)).filter(Boolean));
+  const vats = new Set(db.clients.map(c => c.vat).filter(Boolean));
+  const byCode = new Map(db.clients.map(c => [c.codice, c]));
+  rows.slice(1).forEach(r => {
+    const g = k => ix[k] >= 0 ? String(r[ix[k]] ?? '').trim() : '';
+    const name = g('name');
+    if (!name) { plan.err++; return; }
+    const data = {name, type: /azienda/i.test(g('type')) ? 'azienda' : 'privato', phone:g('phone'), email:g('email'), address:g('address'),
+      cap:g('cap'), city:g('city'), vat:g('vat'), sdi:g('sdi'), pec:g('pec'), monthly:yes(g('monthly')), whatsappOk:yes(g('wa')), notes:g('notes')};
+    const ex = g('codice') ? byCode.get(g('codice')) : null;
+    if (ex) { plan.upd.push({ex, data}); return; }
+    const dig = digitsOf(data.phone);
+    if ((dig && phones.has(dig)) || (data.vat && vats.has(data.vat))) { plan.dup.push(name); return; }
+    if (dig) phones.add(dig);
+    if (data.vat) vats.add(data.vat);
+    plan.add.push(data);
+  });
+  pendingPlan = plan;
+  const changed = plan.upd.filter(({ex, data}) => ['name','phone','email','address','city','cap','vat','monthly','whatsappOk','notes']
+    .some(k => String(ex[k] ?? '') !== String(data[k] ?? ''))).length;
+  modal('Anteprima importazione', `
+    <ul class="stack small">
+      <li><b>${changed}</b> clienti esistenti da aggiornare (su ${plan.upd.length} riconosciuti dal codice)</li>
+      <li><b>${plan.add.length}</b> nuovi clienti da aggiungere</li>
+      <li><b>${plan.dup.length}</b> duplicati saltati (telefono o P.IVA già presenti)${plan.dup.length ? ': ' + esc(plan.dup.slice(0,8).join(', ')) + (plan.dup.length > 8 ? '…' : '') : ''}</li>
+      <li><b>${plan.err}</b> righe senza nome, ignorate</li>
+    </ul>
+    <p class="muted small">I campi vuoti nel file sostituiscono i valori attuali dei clienti aggiornati. Controlla il file prima di confermare.</p>`,
+    `<button class="ghost" onclick="pendingPlan=null;closeModal()">Annulla</button><button onclick="applyImport()">Conferma importazione</button>`);
+}
+function applyImport(){
+  if (!pendingPlan || !requireAdmin()) return;
+  const plan = pendingPlan;
+  let upd = 0;
+  plan.upd.forEach(({ex, data}) => {
+    const before = JSON.stringify(ex);
+    Object.assign(ex, data);
+    if (data.whatsappOk && !ex.consentDate) ex.consentDate = ymd(new Date());
+    if (JSON.stringify(ex) !== before) upd++;
+  });
+  let n = maxCode();
+  plan.add.forEach(d => {
+    n++;
+    db.clients.push({id:'c' + uid(), codice:'C' + pad(n, 5), ...d, consentDate: d.whatsappOk ? ymd(new Date()) : ''});
+  });
+  logAct(`Import clienti: ${upd} aggiornati, ${plan.add.length} nuovi, ${plan.dup.length} duplicati saltati`);
+  pendingPlan = null;
+  closeModal();
+  commit();
+  alert(`Importazione completata: ${upd} aggiornati, ${plan.add.length} nuovi, ${plan.dup.length} duplicati saltati.`);
+}
+function exportBackup(){
+  downloadFile('backup-watergold-' + ymd(new Date()) + '.json', 'application/json', JSON.stringify(db));
+}
+function importBackup(input){
+  if (!requireAdmin()) return;
+  const f = input.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const d = JSON.parse(r.result);
+      if (!d.clients || !d.appointments || !d.items || !d.users) throw new Error('file non valido');
+      if (!confirm('Il backup sostituirà tutti i dati attuali. Continuare?')) return;
+      db = d;
+      logAct('Backup ripristinato');
+      commit();
+      alert('Backup ripristinato.');
+    } catch(e) { alert('Ripristino non riuscito: ' + e.message); }
+  };
+  r.readAsText(f);
+}
+function resetDemo(){
+  if (!requireAdmin()) return;
+  if (!confirm('Ricaricare i dati demo? Le modifiche verranno perse.')) return;
+  db = seed();
+  localStorage.setItem(ME_KEY, db.users[0].id);
+  me = db.users[0];
+  commit();
+}
+
+/* ---------- QR CODE ---------- */
+function viewQr(){
+  return `
+  <div class="grid2">
+    <div class="card"><h3>Indirizzo collegato</h3>
+      <div class="stack">
+        <label>Indirizzo del QR<input id="qr-url" value="${esc(db.settings.site)}"></label>
+        <label class="chk"><input type="checkbox" id="qr-logo-on" ${db.settings.qrLogo !== false ? 'checked' : ''} onchange="db.settings.qrLogo=this.checked;save();makeQr()"> Logo al centro del QR</label>
+        <div class="actions">
+          <label class="btn ghost">${db.settings.logo ? 'Cambia logo' : 'Carica il tuo logo'}<input type="file" accept="image/*" hidden onchange="setQrLogo(this)"></label>
+          ${db.settings.logo ? '<button class="ghost sm" onclick="db.settings.logo=\'\';save();render()">Usa il logo predefinito</button>' : ''}
+        </div>
+        <div class="actions"><button onclick="makeQr()">Genera QR</button></div>
+        <p class="muted small">Stampalo su biglietti, vetrina o furgone: il cliente lo inquadra con la fotocamera e apre il sito. Il logo copre il centro del codice, che resta leggibile grazie alla correzione d'errore alta.</p>
+      </div>
+    </div>
+    <div class="card qr-card">
+      <div id="qr-box"></div>
+      <p><b>Scansiona per accedere</b><br><span id="qr-label">${esc(db.settings.site)}</span></p>
+      <div class="actions" style="justify-content:center"><button onclick="saveQr()">Scarica PNG</button><button class="ghost" onclick="window.print()">Stampa</button></div>
+    </div>
+  </div>`;
+}
+function makeQr(){
+  const box = document.getElementById('qr-box');
+  if (!box) return;
+  const url = (document.getElementById('qr-url') || {}).value || db.settings.site;
+  box.innerHTML = '';
+  if (typeof QRCode === 'undefined') { box.innerHTML = '<p class="muted">Libreria QR non caricata: serve la connessione internet.</p>'; return; }
+  new QRCode(box, {text:url, width:240, height:240, colorDark:'#0f2b40', colorLight:'#ffffff', correctLevel:QRCode.CorrectLevel.H});
+  document.getElementById('qr-label').textContent = url;
+  if (url !== db.settings.site) { db.settings.site = url; save(); }
+  if (db.settings.qrLogo !== false) setTimeout(() => drawQrLogo(box), 60);
+}
+// Logo al centro del QR: quello caricato in questa sezione, altrimenti una goccia Watergold disegnata qui
+function drawQrLogo(box){
+  const cv = box.querySelector('canvas');
+  if (!cv) return;
+  const ctx = cv.getContext('2d'), W = cv.width, s = Math.round(W * 0.24), x = (W - s) / 2, pad = 5;
+  const finish = () => { const img = box.querySelector('img'); if (img) img.src = cv.toDataURL('image/png'); };
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath(); ctx.roundRect(x - pad, x - pad, s + pad * 2, s + pad * 2, 10); ctx.fill();
+  if (db.settings.logo) {
+    const im = new Image();
+    im.onload = () => {
+      const k = Math.min(s / im.width, s / im.height), w = im.width * k, h = im.height * k;
+      ctx.drawImage(im, (W - w) / 2, (W - h) / 2, w, h);
+      finish();
+    };
+    im.src = db.settings.logo;
+    return;
+  }
+  const c = W / 2, r = s / 2;
+  ctx.fillStyle = '#e3b64b';
+  ctx.beginPath(); ctx.arc(c, c, r, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#0f2b40';
+  ctx.beginPath();
+  ctx.moveTo(c, c - r * 0.62);
+  ctx.bezierCurveTo(c + r * 0.15, c - r * 0.3, c + r * 0.45, c, c + r * 0.45, c + r * 0.2);
+  ctx.arc(c, c + r * 0.2, r * 0.45, 0, Math.PI);
+  ctx.bezierCurveTo(c - r * 0.45, c, c - r * 0.15, c - r * 0.3, c, c - r * 0.62);
+  ctx.fill();
+  finish();
+}
+function setQrLogo(input){
+  const f = input.files[0];
+  if (!f) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    // ridimensiona il logo per non appesantire i dati salvati
+    const im = new Image();
+    im.onload = () => {
+      const k = Math.min(1, 200 / Math.max(im.width, im.height)), cv = document.createElement('canvas');
+      cv.width = Math.round(im.width * k); cv.height = Math.round(im.height * k);
+      cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height);
+      db.settings.logo = cv.toDataURL('image/png');
+      db.settings.qrLogo = true;
+      commit();
+    };
+    im.src = rd.result;
+  };
+  rd.readAsDataURL(f);
+}
+function saveQr(){
+  const cv = document.querySelector('#qr-box canvas');
+  if (!cv) return alert('Genera prima il QR code.');
+  cv.toBlob(b => downloadFile('qr-watergold.png', 'image/png', b), 'image/png');
+}
+
+/* ---------- IMPOSTAZIONI ---------- */
+function viewSettings(){
+  const s = db.settings;
+  return `
+  <div class="grid2">
+    <div class="card"><h3>Azienda e fatturazione</h3><div class="stack">
+      <label>Ragione sociale<input id="s-company" value="${esc(s.company)}"></label>
+      <label>P.IVA<input id="s-vat" value="${esc(s.vat)}"></label>
+      <label>Indirizzo<input id="s-address" value="${esc(s.address)}"></label>
+      <label>Sito web<input id="s-site" value="${esc(s.site)}"></label>
+      <label>Regime fiscale<input id="s-regime" value="${esc(s.regime)}"></label>
+      <label>Codice SDI<input id="s-sdi" value="${esc(s.sdi)}"></label>
+      <label>PEC<input id="s-pec" value="${esc(s.pec)}"></label>
+      <label>Aliquota IVA %<input type="number" id="s-iva" value="${s.vatRate}"></label>
+      <label>Servizi e prezzi (uno per riga: nome;prezzo)<textarea id="s-svc" rows="6">${esc(s.services.map(x => x.name + ';' + x.price).join('\n'))}</textarea></label>
+      <label>Messaggio comunicazioni<textarea id="s-wa" rows="3">${esc(s.waTemplate)}</textarea></label>
+      <label>Messaggio promemoria<textarea id="s-rem" rows="3">${esc(s.reminderTpl)}</textarea></label>
+      <label>Messaggio di conferma cambio filtri ({nome} {operatore} {data} {ora})<textarea id="s-conf" rows="3">${esc(s.confirmTpl)}</textarea></label>
+      <div><button onclick="saveSettings()">Salva impostazioni</button></div>
+    </div></div>
+    <div class="card"><h3>Utenti e ruoli</h3>
+      <p class="muted small" style="margin-top:0">Titolare e segreteria vedono tutto. I tecnici vedono solo agenda, giro, clienti (senza dati fiscali) e magazzino.</p>
+      <div class="tbl-wrap"><table><thead><tr><th>Nome</th><th>Ruolo</th><th></th></tr></thead><tbody>
+      ${db.users.map(u => `<tr><td><span class="badge" style="background:${u.color};color:#fff">&nbsp;</span> <b>${esc(u.name)}</b><br><small class="muted">${esc(u.email)}</small></td>
+        <td>${u.role === 'admin' ? 'Titolare / segreteria' : 'Tecnico'}</td>
+        <td class="acts"><button class="ghost sm" onclick="userForm('${u.id}')">Modifica</button><button class="danger sm" onclick="delUser('${u.id}')">✕</button></td></tr>`).join('')}
+      </tbody></table></div>
+      <div class="actions" style="margin-top:10px"><button class="ghost" onclick="userForm()">+ Nuovo utente</button></div>
+    </div>
+  </div>`;
+}
+function saveSettings(){
+  if (!requireAdmin()) return;
+  const services = val('s-svc').split('\n').map(l => l.split(';')).filter(p => p[0] && p[0].trim())
+    .map(([name, price]) => ({name:name.trim(), price:+String(price).replace(',', '.') || 0}));
+  if (!services.length) return alert('Inserisci almeno un servizio.');
+  Object.assign(db.settings, {
+    company: val('s-company').trim(), vat: val('s-vat').trim(), address: val('s-address').trim(),
+    site: val('s-site').trim(), regime: val('s-regime').trim(), sdi: val('s-sdi').trim(), pec: val('s-pec').trim(),
+    vatRate: +val('s-iva') || 22, services, waTemplate: val('s-wa'), reminderTpl: val('s-rem'), confirmTpl: val('s-conf')
+  });
+  commit();
+  alert('Impostazioni salvate.');
+}
+function userForm(id){
+  if (!requireAdmin()) return;
+  const u = id ? byId(db.users, id) : {role:'tecnico', color:COLORS[db.users.length % COLORS.length], phone:'', name:'', email:''};
+  modal(id ? 'Modifica utente' : 'Nuovo utente', `
+    <div class="grid2">
+      <label>Nome e cognome<input id="u-name" value="${esc(u.name)}"></label>
+      <label>Email (per l'accesso)<input id="u-email" type="email" value="${esc(u.email)}"></label>
+      <label>Ruolo<select id="u-role"><option value="tecnico" ${u.role === 'tecnico' ? 'selected' : ''}>Tecnico</option><option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Titolare / segreteria</option></select></label>
+      <label>Telefono<input id="u-phone" value="${esc(u.phone)}"></label>
+      <label>Colore in agenda<input id="u-color" type="color" value="${u.color}"></label>
+      <label>Password ${id ? '(lascia vuoto per non cambiarla)' : ''}<input id="u-pass" type="password"></label>
+    </div>`,
+    `<button class="ghost" onclick="closeModal()">Annulla</button><button onclick="saveUser('${id || ''}')">Salva</button>`);
+}
+function saveUser(id){
+  if (!requireAdmin()) return;
+  const name = val('u-name').trim(), email = val('u-email').trim().toLowerCase(), role = val('u-role'), pass = val('u-pass');
+  if (!name || !email) return alert('Nome ed email sono obbligatori.');
+  if (db.users.some(u => u.email === email && u.id !== id)) return alert('Email già usata da un altro utente.');
+  if (!id && pass.length < 6) return alert('La password deve avere almeno 6 caratteri.');
+  if (id && pass && pass.length < 6) return alert('La password deve avere almeno 6 caratteri.');
+  const data = {name, email, role, phone: val('u-phone').trim(), color: val('u-color')};
+  if (id) {
+    const u = byId(db.users, id);
+    if (u.role === 'admin' && role !== 'admin' && db.users.filter(x => x.role === 'admin').length < 2) return alert('Deve restare almeno un utente titolare.');
+    Object.assign(u, data);
+    if (pass) u.pass = hashPw(pass);
+  } else {
+    db.users.push({id:'u' + uid(), ...data, pass:hashPw(pass)});
+  }
+  closeModal();
+  commit();
+}
+function delUser(id){
+  if (!requireAdmin()) return;
+  const u = byId(db.users, id);
+  if (u.id === me.id) return alert('Non puoi eliminare l\'utente con cui sei collegato.');
+  if (u.role === 'admin' && db.users.filter(x => x.role === 'admin').length < 2) return alert('Deve restare almeno un utente titolare.');
+  if (!confirm(`Eliminare l'utente ${u.name}?`)) return;
+  db.users = db.users.filter(x => x.id !== id);
+  commit();
+}
+
+/* ---------- RICHIESTE DI MODIFICA ---------- */
+// Modulo Google "Watergold – Richieste di modifica" (account digitalizziamopalermo@gmail.com) e id dei suoi campi
+const REQ_FORM = {url: 'https://docs.google.com/forms/d/e/1FAIpQLSfSia-0QMdvINDzmeaDsiolaY6fQFg_4xaVY8-5m-3JjVbfAg/viewform',
+  sezione: 'entry.482999487', richiesta: 'entry.458038401', nome: 'entry.1135616826'};
+// Storico aggiornato da chi sviluppa il gestionale a ogni nuova versione
+const RICHIESTE = [
+  {data:'2026-10-27', sezione:'Pianifica giri', testo:'Organizzare in automatico i giri del cambio filtri: oggi inserisco gli indirizzi a mano in Google Maps e cerco il cliente più vicino per ogni tecnico, finisco alle 18.', stato:'fatta',
+   risposta:'Nuova sezione "Pianifica giri": scegli comuni e tecnici, il gestionale raggruppa i clienti vicini, ordina il percorso e calcola orari. Puoi sempre spostare, aggiungere o togliere clienti a mano.'},
+  {data:'2026-10-27', sezione:'Pianifica giri', testo:'Decidere io dove e da chi andare: il programma deve proporre, non imporre.', stato:'fatta',
+   risposta:'Ogni tappa si può spostare su un altro tecnico o giorno, riordinare o togliere. Per chi non risponde il gestionale propone il cliente più vicino, ma sei tu a decidere se aggiungerlo.'},
+  {data:'2026-10-27', sezione:'Pianifica giri', testo:'Vedere i giri su una mappa vera, più chiara.', stato:'fatta',
+   risposta:'Mappa con le vie e i quartieri reali, tappe numerate e filtro per vedere un tecnico alla volta.'},
+  {data:'2026-10-27', sezione:'Dati e fogli', testo:'I pulsanti di esportazione Excel/CSV non funzionano nella pagina online.', stato:'fatta',
+   risposta:'Ora ogni esportazione chiede conferma e salva il file.'},
+  {data:'2026-10-27', sezione:'Pianifica giri', testo:'Collaudo invio con un tocco dal gestionale', stato:'fatta',
+   risposta:'Collaudo riuscito: la richiesta è arrivata ed è stata letta.'},
+  {data:'2026-10-27', sezione:'QR code', testo:'logo al centro del qr', stato:'fatta',
+   risposta:'Nella sezione QR code ora c\'è il logo al centro, attivo di serie. Puoi caricare il logo Watergold con "Carica il tuo logo" (finché non lo carichi compare una goccia nei colori Watergold) o toglierlo con la casella "Logo al centro del QR". Il codice resta leggibile.'}
+];
+const REQ_STATI = {ricevuta:['Ricevuta',''], lavorazione:['In lavorazione','in_corso'], fatta:['Fatta','completato'], chiarire:['Da chiarire','annullato']};
+function reqForm(){
+  const sec = SECTIONS.find(x => x.id === view);
+  modal('✏️ Chiedi una modifica', `
+    <p class="muted small" style="margin-top:0">Scrivi con parole tue cosa vorresti cambiare o aggiungere. La richiesta arriva direttamente a chi sviluppa il gestionale e trovi la risposta in "Le tue richieste".</p>
+    <div class="stack">
+      <label>Dove (sezione)<select id="rq-sec">${SECTIONS.filter(x => x.id !== 'richieste').map(x => `<option ${sec && x.id === sec.id ? 'selected' : ''}>${esc(x.t)}</option>`).join('')}<option>Altro / tutto il gestionale</option></select></label>
+      <label>Cosa vorresti<textarea id="rq-txt" rows="5" placeholder="Es. Nella mappa vorrei vedere anche il numero di telefono del cliente"></textarea></label>
+      <label>Il tuo nome (facoltativo)<input id="rq-nome" value="${esc(me ? me.name : '')}"></label>
+    </div>`,
+    `<button class="ghost" onclick="closeModal()">Annulla</button><button onclick="sendReq()">Invia richiesta</button>`);
+  setTimeout(() => { const t = document.getElementById('rq-txt'); if (t) t.focus(); }, 0);
+}
+// Invia la richiesta direttamente al Modulo Google, senza farlo riaprire e ricompilare.
+// Se la pagina non può inviare da sola, mostra un unico pulsante che la invia con un tocco.
+const SENT_KEY = 'watergold-richieste-inviate';
+function sentList(){ try { return JSON.parse(localStorage.getItem(SENT_KEY) || '[]'); } catch(e) { return []; } }
+function rememberSent(r){ try { localStorage.setItem(SENT_KEY, JSON.stringify([r, ...sentList()].slice(0, 50))); } catch(e) {} }
+async function sendReq(){
+  const sezione = val('rq-sec'), testo = val('rq-txt').trim(), nome = val('rq-nome').trim();
+  if (!testo) return alert('Scrivi la richiesta.');
+  const p = new URLSearchParams({[REQ_FORM.sezione]: sezione, [REQ_FORM.richiesta]: testo});
+  if (REQ_FORM.nome) p.set(REQ_FORM.nome, nome);
+  const action = REQ_FORM.url.replace(/viewform.*$/, 'formResponse');
+  const rec = {data: ymd(new Date()), sezione, testo, nome};
+  document.querySelector('#modal .mf button:last-child').disabled = true;
+  try {
+    await fetch(action, {method: 'POST', mode: 'no-cors', body: p});
+    rememberSent(rec);
+    modal('✅ Richiesta inviata', '<p style="margin-top:0">Grazie! La tua richiesta è arrivata. La trovi in <b>"Le tue richieste"</b> e lì vedrai anche la risposta quando sarà fatta.</p>',
+      '<button onclick="closeModal();go(\'richieste\')">Vedi le tue richieste</button>');
+  } catch (e) {
+    const url = action + '?' + p.toString() + '&submit=Submit';
+    modal('Ultimo passaggio', `<p style="margin-top:0">Tocca il pulsante qui sotto per inviare la richiesta. Si aprirà una pagina di Google con scritto <b>"La tua risposta è stata registrata"</b>: puoi chiuderla.</p>
+      <p style="text-align:center"><a class="btn" style="padding:14px 22px;font-size:16px" href="${esc(url)}" target="_blank" rel="noopener" onclick="rememberSent(${esc(JSON.stringify(rec))});setTimeout(()=>{closeModal();go('richieste')},400)">📨 Invia la richiesta</a></p>`,
+      '<button class="ghost" onclick="closeModal()">Annulla</button>');
+  }
+}
+function viewRichieste(){
+  const list = [...RICHIESTE].reverse();
+  // richieste inviate da questo dispositivo e non ancora presenti nello storico
+  const norm = t => String(t).toLowerCase().replace(/[^a-z0-9àèéìòù]+/g, ' ').trim();
+  const pend = sentList().filter(r => !RICHIESTE.some(x => norm(x.testo) === norm(r.testo)));
+  return `
+  <div class="card" style="text-align:center">
+    <button class="big" style="max-width:420px;background:#e3b64b;color:#0f2b40;font-weight:700" onclick="reqForm()">✏️ Chiedi una modifica</button>
+    <p class="muted small" style="margin-bottom:0">Il pulsante giallo è anche in basso a destra in ogni pagina.</p>
+  </div>
+  ${pend.length ? `<div class="card"><h3>Inviate da questo dispositivo (${pend.length})</h3>
+    ${pend.map(r => `<div class="req"><div><span class="badge">Inviata</span> <small class="muted">${fmtDate(r.data)} · ${esc(r.sezione)}</small></div>
+      <div style="margin-top:6px">${esc(r.testo)}</div><div class="muted small" style="margin-top:6px">Ricevuta: la risposta comparirà nello storico qui sotto.</div></div>`).join('')}
+  </div>` : ''}
+  <div class="card"><h3>Storico richieste (${list.length})</h3>
+    ${list.map(r => `<div class="req">
+      <div><span class="badge ${REQ_STATI[r.stato][1]}">${REQ_STATI[r.stato][0]}</span> <small class="muted">${fmtDate(r.data)} · ${esc(r.sezione)}</small></div>
+      <div style="margin-top:6px">${esc(r.testo)}</div>
+      ${r.risposta ? `<div class="ans"><b>Risposta:</b> ${esc(r.risposta)}</div>` : ''}
+    </div>`).join('') || '<p class="muted">Nessuna richiesta.</p>'}
+  </div>`;
+}
+
+/* ---------- APERTURA LINK ESTERNI ---------- */
+function openExt(url){
+  const a = document.createElement('a');
+  a.href = url; a.target = '_blank'; a.rel = 'noopener';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+/* ---------- TEMA, OROLOGIO, SALUTO ---------- */
+const ICONS = {dash:'📊', pianifica:'🗺️', agenda:'📅', giro:'🛠️', clienti:'👥', magazzino:'📦', promemoria:'🔔', messaggi:'💬',
+  fatture:'🧾', report:'📈', automazioni:'⚙️', dati:'🗂️', qr:'🔳', richieste:'📝', impost:'🔧'};
+function applyTheme(){
+  let t = 'light';
+  try { t = localStorage.getItem('wg-theme') || 'light'; } catch(e) {}
+  document.documentElement.setAttribute('data-theme', t);
+  document.querySelectorAll('.tlabel').forEach(el => { el.textContent = t === 'dark' ? 'Tema chiaro' : 'Tema scuro'; });
+}
+function toggleTheme(){
+  const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  try { localStorage.setItem('wg-theme', next); } catch(e) {}
+  applyTheme();
+}
+function updateClock(){
+  const txt = new Date().toLocaleString('it-IT', {weekday:'short', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'});
+  document.querySelectorAll('.clock').forEach(el => { el.textContent = txt; });
+}
+function saluto(){
+  const h = new Date().getHours();
+  return h < 12 ? 'Buongiorno' : h < 18 ? 'Buon pomeriggio' : 'Buonasera';
+}
+
+/* ---------- AVVIO ---------- */
+applyTheme();
+let db = load();
+boot();
+updateClock();
+setInterval(updateClock, 30000);
+</script>
+</body>
+</html>
