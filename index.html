@@ -565,10 +565,25 @@ function seed(){
 }
 
 /* ---------- STORAGE ---------- */
+// I dati inseriti dalla cliente non si azzerano mai con gli aggiornamenti: la chiave KEY resta 'watergold-v6'
+// e ai dati già salvati si aggiungono solo i campi nuovi che mancano. Quando si aggiunge un campo, va elencato qui.
+const DB_FIELDS = ['users','clients','items','appointments','invoices','movements','sentWa','reminders','log','lastDaily','plan'];
+const SETTINGS_FIELDS = ['company','vat','address','site','vatRate','regime','sdi','pec','depot','services','rules','waTemplate','reminderTpl','confirmTpl'];
+function upgrade(d){
+  let fresh = null;
+  const def = () => fresh || (fresh = seed());
+  DB_FIELDS.forEach(k => { if (d[k] === undefined) d[k] = def()[k]; });
+  d.settings = d.settings || {};
+  SETTINGS_FIELDS.forEach(k => { if (d.settings[k] === undefined) d.settings[k] = def().settings[k]; });
+  RULES.forEach(([k]) => { if (d.settings.rules[k] === undefined) d.settings.rules[k] = true; });
+  return d;
+}
 function load(){
-  try { const s = localStorage.getItem(KEY); if (s) return JSON.parse(s); } catch(e) {}
+  try { const s = localStorage.getItem(KEY); if (s) return upgrade(JSON.parse(s)); } catch(e) {}
   return seed();
 }
+// Chiede al browser di non cancellare i dati salvati (es. Safari dopo giorni di inattività)
+try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch(e) {}
 function save(){
   try { localStorage.setItem(KEY, JSON.stringify(db)); }
   catch(e) { alert('Memoria del browser piena: esporta un backup dalla sezione Dati e fogli.'); }
