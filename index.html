@@ -938,6 +938,7 @@ function saveMats(id){
 }
 function appForm(pre = {}, id){
   if (!requireAdmin()) return;
+  pre = pre || {};
   const svc0 = db.settings.services.find(s => s.name === pre.service) || db.settings.services[0];
   const a = id ? byId(db.appointments, id) : {date:pre.date || ymd(new Date()), time:'09:00', duration:60, clientId:'', techId:tecnici()[0].id, service:svc0.name, price:svc0.price, address:'', notes:'', status:'programmato', materials:[]};
   modal(id ? 'Modifica appuntamento' : 'Nuovo appuntamento', `
