@@ -77,6 +77,8 @@ th{font-size:13px;color:var(--muted);font-weight:600}
 .appt{border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:8px;background:#fbfcfe}
 .appt .at{margin-bottom:4px}
 .note{font-size:13px;color:var(--muted);font-style:italic;margin-top:4px}
+.interv{font-size:13px;font-weight:600;margin-top:4px}
+.guasto{font-size:13px;margin-top:4px;padding:6px 8px;border-radius:6px;background:#fdecea;color:#8a1f17}
 .row-acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .row-acts select{padding:4px}
 .rowline{padding:8px 0;border-bottom:1px solid var(--line)}
@@ -271,6 +273,10 @@ const DEFAULT_SERVICES = [
   {name:'Sopralluogo', price:40},
   {name:'Visita contratto mensile', price:60}
 ];
+const GUASTO = 'Riparazione guasto';
+// Tipi di intervento proposti (modificabili in Impostazioni): il tecnico sa prima cosa deve fare
+const DEFAULT_TIPI = ['Cambio filtri sottolavello (3 filtri)','Cambio filtri osmosi inversa (5 stadi)','Cambio filtri osmosi + membrana',
+  'Cambio filtri + lampada UV','Cambio filtro e sale addolcitore','Cambio filtro refrigeratore / gasatore','Sanificazione impianto'];
 const SECTIONS = [
   {id:'dash', t:'Panoramica', roles:['admin'], d:'Riepilogo della giornata: interventi, incassi, scorte da riordinare e automazioni eseguite.'},
   {id:'pianifica', t:'Pianifica giri', roles:['admin'], d:'Il gestionale prende i clienti con il cambio filtri in scadenza, li raggruppa per vicinanza, assegna un giro a ogni tecnico con il percorso più corto, calcola orari e chilometri e prepara le chiamate. Il calcolo è una proposta: l\'operatrice decide e può cambiare tutto a mano.'},
@@ -509,7 +515,7 @@ function seed(){
       phone:`+39 3${pick(['20','28','29','31','33','34','38','40','45','47','49','66','71','80','88','92'])} ${int(100, 999)} ${int(1000, 9999)}`,
       email: az ? `info${n}@example.com` : `${fn.toLowerCase()}.${ln.toLowerCase().replace(/\W/g, '')}${n}@example.com`,
       address:`${street} ${int(1, 180)}, ${tw[0]}`, cap, city:tw[0], prov:tw[5], zona, lat:round6(lat), lng:round6(lng),
-      filtroMesi:ft, ultimoCambio:'', prossimoCambio:'',
+      filtroMesi:ft, ultimoCambio:'', prossimoCambio:'', tipoIntervento: DEFAULT_TIPI[n % 6],
       vat: az ? String(int(10000000000, 99999999999)) : '', sdi: az ? '0000000' : '', pec: az && R() < 0.5 ? `info${n}@pec.example.com` : '',
       monthly: R() < 0.03, whatsappOk: R() < 0.7, consentDate:'', notes:''
     };
@@ -541,7 +547,7 @@ function seed(){
       company:'Watergold', vat:'IT00000000000', address:'Via Ugo La Malfa (sede fittizia), 90146 Palermo', site:'https://watergold.it',
       vatRate:22, regime:'RF01 - Regime ordinario', sdi:'0000000', pec:'fatture@pec.example.com',
       depot:{label:'Sede Watergold', lat:38.1440, lng:13.3180},
-      services,
+      services, tipiIntervento: DEFAULT_TIPI.slice(),
       rules:{scarico:true, fatturaMese:true, visiteMensili:true, promemoria:true, scorte:true, scaduti:true},
       waTemplate:'Ciao {nome}, a {mese} abbiamo effettuato {interventi} intervento/i per un totale di {importo}. Per prenotare rispondi a questo messaggio o visita {sito}. Grazie, Watergold',
       reminderTpl:'Ciao {nome}, ti ricordiamo l\'intervento di domani {data} alle {ora} ({servizio}) con {tecnico}. Per spostarlo rispondi a questo messaggio. Grazie, Watergold',
@@ -568,7 +574,7 @@ function seed(){
 // I dati inseriti dalla cliente non si azzerano mai con gli aggiornamenti: la chiave KEY resta 'watergold-v6'
 // e ai dati già salvati si aggiungono solo i campi nuovi che mancano. Quando si aggiunge un campo, va elencato qui.
 const DB_FIELDS = ['users','clients','items','appointments','invoices','movements','sentWa','reminders','log','lastDaily','plan'];
-const SETTINGS_FIELDS = ['company','vat','address','site','vatRate','regime','sdi','pec','depot','services','rules','waTemplate','reminderTpl','confirmTpl'];
+const SETTINGS_FIELDS = ['company','vat','address','site','vatRate','regime','sdi','pec','depot','services','rules','waTemplate','reminderTpl','confirmTpl','tipiIntervento'];
 function upgrade(d){
   let fresh = null;
   const def = () => fresh || (fresh = seed());
@@ -849,7 +855,7 @@ function viewAgenda(){
       ${isAdmin() ? `<select onchange="ui.agTech=this.value;render()"><option value="all">Tutti i tecnici</option>
         ${tecnici().map(t => `<option value="${t.id}" ${ui.agTech === t.id ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select>` : ''}
     </div>
-    ${isAdmin() ? `<div class="actions"><button onclick="appForm({date:'${day}'})">+ Nuovo appuntamento</button></div>` : ''}
+    ${isAdmin() ? `<div class="actions"><button onclick="appForm({date:'${day}'})">+ Nuovo appuntamento</button><button class="ghost" onclick="appForm({date:'${day}',service:GUASTO})">🔧 Cliente con un guasto</button></div>` : ''}
   </div>
   <p class="muted">${fmtLong(day)} · ${apps.length} interventi</p>
   <div class="cols">
@@ -869,6 +875,7 @@ function apptCard(a){
     <div class="at"><b>${a.time}</b> <span class="muted">${a.duration} min</span> <span class="badge ${a.status}">${STATUS[a.status]}</span>${a.signature ? ' <span class="badge completato">Firmato</span>' : ''}</div>
     <div><b>${esc(c.name)}</b> <small class="muted">${esc(c.codice)}</small></div>
     <div class="muted">${esc(a.service)} · ${esc(a.address || c.address)}</div>
+    ${intervHtml(a)}
     ${a.notes ? `<div class="note">${esc(a.notes)}</div>` : ''}
     <div class="row-acts">
       <select onchange="setStatus('${a.id}',this.value)">${statusOpts(a.status)}</select>
@@ -917,7 +924,8 @@ function saveMats(id){
 }
 function appForm(pre = {}, id){
   if (!requireAdmin()) return;
-  const a = id ? byId(db.appointments, id) : {date:pre.date || ymd(new Date()), time:'09:00', duration:60, clientId:'', techId:tecnici()[0].id, service:db.settings.services[0].name, price:db.settings.services[0].price, address:'', notes:'', status:'programmato', materials:[]};
+  const svc0 = db.settings.services.find(s => s.name === pre.service) || db.settings.services[0];
+  const a = id ? byId(db.appointments, id) : {date:pre.date || ymd(new Date()), time:'09:00', duration:60, clientId:'', techId:tecnici()[0].id, service:svc0.name, price:svc0.price, address:'', notes:'', status:'programmato', materials:[]};
   modal(id ? 'Modifica appuntamento' : 'Nuovo appuntamento', `
     <div class="grid2">
       <label>Data<input type="date" id="f-date" value="${a.date}"></label>
@@ -927,8 +935,11 @@ function appForm(pre = {}, id){
       <label class="full">Cliente<input id="f-client" list="f-client-list" value="${esc(id ? cname(a.clientId) + ' · ' + (byId(db.clients, a.clientId)||{}).codice : '')}" placeholder="Scrivi nome o codice cliente" oninput="pickClient(this.value)"></label>
       <datalist id="f-client-list" style="display:none"></datalist>
       <input type="hidden" id="f-clientid" value="${esc(a.clientId)}">
-      <label>Servizio<select id="f-service" onchange="document.getElementById('f-price').value=this.selectedOptions[0].dataset.price">${db.settings.services.map(s => `<option value="${esc(s.name)}" data-price="${s.price}" ${s.name === a.service ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></label>
+      <label>Servizio<select id="f-service" onchange="document.getElementById('f-price').value=this.selectedOptions[0].dataset.price;document.getElementById('f-guasto').style.display=this.value===GUASTO?'':'none'">${db.settings.services.map(s => `<option value="${esc(s.name)}" data-price="${s.price}" ${s.name === a.service ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></label>
       <label>Prezzo manodopera (€)<input type="number" step="0.01" id="f-price" value="${a.price}"></label>
+      <label class="full" id="f-guasto" style="${a.service === GUASTO ? '' : 'display:none'}">🔧 Problema segnalato dal cliente (lo legge il tecnico prima di partire)<textarea id="f-problema" rows="3" placeholder="Es. perde acqua sotto il lavello, il rubinetto non eroga, spia rossa accesa…">${esc(a.problema || '')}</textarea></label>
+      <label class="full">Tipo di intervento / impianto (cosa deve fare il tecnico)<input id="f-interv" list="tipi-list" value="${esc(a.intervento || '')}" placeholder="Scegli dall'elenco o scrivi"></label>
+      ${tipiList()}
       <label class="full">Indirizzo intervento<input id="f-address" value="${esc(a.address)}"></label>
       <label>Stato<select id="f-status">${statusOpts(a.status)}</select></label>
       <label class="full">Note<textarea id="f-notes">${esc(a.notes)}</textarea></label>
@@ -945,15 +956,31 @@ function pickClient(text){
   const hit = db.clients.find(c => c.name.toLowerCase() === q || c.codice.toLowerCase() === q);
   document.getElementById('f-clientid').value = hit ? hit.id : '';
   if (hit) document.getElementById('f-address').value = hit.address;
+  const iv = document.getElementById('f-interv');
+  if (hit && iv && !iv.value && hit.tipoIntervento) iv.value = hit.tipoIntervento;
+}
+// Elenco dei tipi di intervento da scegliere (si può anche scrivere un testo libero)
+function tipiList(){
+  return `<datalist id="tipi-list">${(db.settings.tipiIntervento || []).map(t => `<option value="${esc(t)}">`).join('')}</datalist>`;
+}
+// Tipo di intervento e problema del guasto, ben visibili per il tecnico
+function intervHtml(a){
+  return (a.intervento ? `<div class="interv">🛠️ ${esc(a.intervento)}</div>` : '')
+    + (a.problema ? `<div class="guasto"><b>Problema segnalato:</b> ${esc(a.problema)}</div>` : '');
 }
 function saveAppt(id){
   if (!requireAdmin()) return;
   const a = {
     date: val('f-date'), time: val('f-time'), duration: +val('f-dur') || 60,
     clientId: val('f-clientid'), techId: val('f-tech'), service: val('f-service'), price: +val('f-price') || 0,
-    address: val('f-address').trim(), notes: val('f-notes').trim(), status: val('f-status'), materials: readMats()
+    address: val('f-address').trim(), notes: val('f-notes').trim(), status: val('f-status'), materials: readMats(),
+    intervento: val('f-interv').trim(), problema: val('f-service') === GUASTO ? val('f-problema').trim() : ''
   };
   if (!a.date || !a.time || !a.clientId) return alert('Compila data, ora e cliente (scegli un cliente dall\'elenco).');
+  if (a.service === GUASTO && !a.problema) return alert('Scrivi il problema segnalato dal cliente, così il tecnico sa cosa trova.');
+  // il tipo di cambio filtri resta memorizzato sul cliente per le volte successive
+  const cl = byId(db.clients, a.clientId);
+  if (cl && a.intervento && a.service === FILTRI) cl.tipoIntervento = a.intervento;
   const start = toMin(a.time), end = start + a.duration;
   const clash = db.appointments.find(x => x.id !== id && x.date === a.date && x.techId === a.techId && x.status !== 'annullato' && toMin(x.time) < end && toMin(x.time) + x.duration > start);
   if (clash && !confirm(`Il tecnico ha già un intervento alle ${clash.time}. Salvare comunque?`)) return;
@@ -1232,7 +1259,7 @@ function bookConfirmed(){
     if (s.call !== 'confermato' || s.apptId) return;
     const isI = s.tipo === 'installazione';
     const a = {id: uid(), date: d.date, time: minToT(eta), duration: stopDur(s), clientId: c.id, techId: r.techId, service: isI ? inst.name : FILTRI, price: isI ? inst.price : svc.price,
-      address: c.address, notes: isI ? 'Nuovo cliente · installazione confermata al telefono' : 'Confermato al telefono · giro pianificato automaticamente', status: 'programmato',
+      address: c.address, intervento: s.intervento || (isI ? '' : c.tipoIntervento || ''), problema: '', notes: isI ? 'Nuovo cliente · installazione confermata al telefono' : 'Confermato al telefono · giro pianificato automaticamente', status: 'programmato',
       materials: isI ? [] : kit.filter(m => byId(db.items, m.itemId)).map(m => ({...m})), stockApplied: false};
     db.appointments.push(a);
     s.apptId = a.id;
@@ -1504,6 +1531,8 @@ function routeCard(di, ri, r){
       <div><b>${esc(x.c.name)}</b> <small class="muted">${esc(x.c.codice)}</small></div>
       <div class="muted small">${esc(x.c.address)}${x.c.zona && x.c.zona !== x.c.city ? ' · ' + esc(x.c.zona) : ''}</div>
       ${x.s.tipo === 'installazione' ? '<div><span class="badge in_corso">🔧 Installazione (90 min)</span></div>' : ''}
+      ${(() => { const iv = x.s.intervento || (x.s.tipo === 'installazione' ? '' : x.c.tipoIntervento || ''); return x.s.apptId ? (iv ? `<div class="interv">🛠️ ${esc(iv)}</div>` : '')
+        : `<div class="interv">🛠️ ${iv ? esc(iv) : '<span class="muted">Tipo di intervento non indicato</span>'} <button class="ghost sm" onclick="stopIntervForm(${di},${ri},'${x.c.id}')">✏️</button></div>`; })()}
       ${x.s.apptId ? '' : `<div class="row-acts">
         <button class="sm" onclick="callForm(${di},${ri},'${x.c.id}')">📞 Chiama</button>
         <button class="ghost sm" onclick="nearForm(${di},${ri},'${x.c.id}')">Più vicini</button>
@@ -1519,6 +1548,23 @@ function routeCard(di, ri, r){
       <div class="row-acts"><button class="sm" onclick="replaceNearest(${di},${ri});commit()">Aggiungi</button><button class="ghost sm" onclick="nearForm(${di},${ri},'${f.best.id}')">Altri vicini</button></div></div>` : ''; })()}
     <div class="row-acts"><button class="ghost sm" onclick="addSearchForm(${di},${ri})">🔍 Aggiungi un cliente a scelta</button><button class="ghost sm" onclick="newInstallForm(${di},${ri})">➕ Cliente nuovo da installare</button></div>
   </div>`;
+}
+// Tipo di intervento per una tappa del giro (passa all'appuntamento quando si mette in agenda)
+function stopIntervForm(di, ri, cid){
+  const s = db.plan.days[di].routes[ri].stops.find(x => x.cid === cid);
+  const c = byId(db.clients, cid) || {};
+  modal(`Tipo di intervento · ${esc(c.name)}`, `<label>Cosa deve fare il tecnico<input id="si-interv" list="tipi-list" value="${esc(s.intervento || c.tipoIntervento || '')}" placeholder="Scegli dall'elenco o scrivi"></label>${tipiList()}
+    <label class="chk" style="margin-top:8px"><input type="checkbox" id="si-save" checked> Ricorda per questo cliente (prossimi cambi filtri)</label>`,
+    `<button class="ghost" onclick="closeModal()">Annulla</button><button onclick="saveStopInterv(${di},${ri},'${cid}')">Salva</button>`);
+}
+function saveStopInterv(di, ri, cid){
+  const s = db.plan.days[di].routes[ri].stops.find(x => x.cid === cid);
+  const v = val('si-interv').trim();
+  s.intervento = v;
+  const c = byId(db.clients, cid);
+  if (c && chk('si-save') && s.tipo !== 'installazione') c.tipoIntervento = v;
+  closeModal();
+  commit();
 }
 function routeOpts(di, ri){
   return db.plan.days.flatMap((d, dj) => d.routes.map((r, rj) => dj === di && rj === ri ? '' :
@@ -1763,6 +1809,7 @@ function giroCard(a, t){
     <div class="time">${a.time} <span class="badge ${a.status}">${STATUS[a.status]}</span></div>
     <div><b>${esc(c.name)}</b> <small class="muted">${esc(c.codice)}</small></div>
     <div class="muted">${esc(a.service)}</div>
+    ${intervHtml(a)}
     ${a.notes ? `<div class="note">${esc(a.notes)}</div>` : ''}
     <div class="links">
       <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}" target="_blank" rel="noopener">📍 ${esc(addr)}</a>
@@ -1837,6 +1884,8 @@ function rapporto(id){
     <tr><th>Cliente</th><td>${esc(c.name)} (${esc(c.codice)})</td></tr>
     <tr><th>Indirizzo</th><td>${esc(a.address || c.address)}</td></tr>
     <tr><th>Servizio</th><td>${esc(a.service)}</td></tr>
+    ${a.intervento ? `<tr><th>Tipo di intervento</th><td>${esc(a.intervento)}</td></tr>` : ''}
+    ${a.problema ? `<tr><th>Problema segnalato</th><td>${esc(a.problema)}</td></tr>` : ''}
     <tr><th>Tecnico</th><td>${esc(tname(a.techId))}</td></tr>
     <tr><th>Stato</th><td>${STATUS[a.status]}</td></tr>
     <tr><th>Note</th><td>${esc(a.notes) || '—'}</td></tr></table>
@@ -1917,14 +1966,14 @@ function clientCard(id){
   modal(`${esc(c.name)} <small class="muted">${esc(c.codice)}</small>`, `
     <div class="grid2">
       <div><b>Indirizzo</b><br>${esc(c.address)}${c.zona && c.zona !== c.city ? '<br><small class="muted">Zona ' + esc(c.zona) + '</small>' : ''}${c.lat ? `<br><a href="https://www.google.com/maps/search/?api=1&query=${c.lat},${c.lng}" target="_blank" rel="noopener">Apri in Google Maps</a>` : ''}</div>
-      <div><b>Cambio filtri</b><br>Ogni ${c.filtroMesi || '—'} mesi<br>Ultimo ${c.ultimoCambio ? fmtDate(c.ultimoCambio) : '—'} · prossimo <b>${c.prossimoCambio ? fmtDate(c.prossimoCambio) : '—'}</b></div>
+      <div><b>Cambio filtri</b><br>${c.tipoIntervento ? '🛠️ ' + esc(c.tipoIntervento) + '<br>' : ''}Ogni ${c.filtroMesi || '—'} mesi<br>Ultimo ${c.ultimoCambio ? fmtDate(c.ultimoCambio) : '—'} · prossimo <b>${c.prossimoCambio ? fmtDate(c.prossimoCambio) : '—'}</b></div>
       <div><b>Contatti</b><br>${esc(c.phone)}<br>${esc(c.email) || '—'}</div>
       ${isAdmin() ? `<div><b>Dati fiscali</b><br>P.IVA/CF ${esc(c.vat) || '—'}<br>SDI ${esc(c.sdi) || '—'} · PEC ${esc(c.pec) || '—'}</div>` : ''}
       <div><b>Privacy</b><br>${c.whatsappOk ? 'Consenso WhatsApp dal ' + (c.consentDate ? fmtDate(c.consentDate) : '—') : 'Nessun consenso WhatsApp'}</div>
     </div>
     ${c.notes ? `<p class="note">${esc(c.notes)}</p>` : ''}
     <h3 style="margin-top:14px">Ultimi interventi</h3>
-    ${apps.map(a => `<div class="rowline small">${fmtDate(a.date)} ${a.time} · ${esc(a.service)} · <span class="badge ${a.status}">${STATUS[a.status]}</span></div>`).join('') || '<p class="muted small">Nessuno</p>'}
+    ${apps.map(a => `<div class="rowline small">${fmtDate(a.date)} ${a.time} · ${esc(a.service)}${a.intervento ? ' · ' + esc(a.intervento) : ''}${a.problema ? ' · ' + esc(a.problema) : ''} · <span class="badge ${a.status}">${STATUS[a.status]}</span></div>`).join('') || '<p class="muted small">Nessuno</p>'}
     ${isAdmin() ? `<h3 style="margin-top:14px">Fatture</h3>${invs.map(i => `<div class="rowline small">${esc(i.number)} · ${fmtDate(i.date)} · ${eur(i.totale)} · ${i.status}</div>`).join('') || '<p class="muted small">Nessuna</p>'}` : ''}`,
     `<button class="ghost" onclick="closeModal()">Chiudi</button>${isAdmin() ? `<button class="ghost" onclick="gdprExport('${id}')">Esporta dati (privacy)</button><button class="danger" onclick="gdprErase('${id}')">Anonimizza</button>` : ''}`);
 }
@@ -1960,6 +2009,8 @@ function clientForm(id){
       <label class="full">PEC<input id="f-pec" value="${esc(c.pec)}"></label>
       <label>Cambio filtri ogni (mesi)<input type="number" min="1" id="f-ft" value="${c.filtroMesi || 6}"></label>
       <label>Prossimo cambio filtri<input type="date" id="f-next" value="${c.prossimoCambio || ''}"></label>
+      <label class="full">Tipo di cambio filtri / impianto del cliente<input id="f-interv" list="tipi-list" value="${esc(c.tipoIntervento || '')}" placeholder="Scegli dall'elenco o scrivi"></label>
+      ${tipiList()}
       <label class="chk"><input type="checkbox" id="f-monthly" ${c.monthly ? 'checked' : ''}> Contratto mensile</label>
       <label class="chk"><input type="checkbox" id="f-wa" ${c.whatsappOk ? 'checked' : ''}> Consenso a ricevere messaggi WhatsApp</label>
       <label class="full">Note<textarea id="f-notes">${esc(c.notes)}</textarea></label>
@@ -1973,7 +2024,7 @@ function saveClient(id){
   const wa = chk('f-wa');
   const data = {name, type:val('f-type'), phone:val('f-phone').trim(), email:val('f-email').trim(), address:val('f-address').trim(),
     city:val('f-city').trim(), cap:val('f-cap').trim(), vat:val('f-vat').trim(), sdi:val('f-sdi').trim(), pec:val('f-pec').trim(),
-    monthly:chk('f-monthly'), whatsappOk:wa, notes:val('f-notes').trim(), filtroMesi:+val('f-ft') || 6, prossimoCambio:val('f-next')};
+    monthly:chk('f-monthly'), whatsappOk:wa, notes:val('f-notes').trim(), filtroMesi:+val('f-ft') || 6, prossimoCambio:val('f-next'), tipoIntervento:val('f-interv').trim()};
   // Demo: posizione indicativa dal comune. Nella versione definitiva l'indirizzo viene convertito in coordinate esatte.
   const old = id ? byId(db.clients, id) : null;
   if (!old || !old.lat || old.city !== data.city) { const g = geoGuess(data.city); if (g) Object.assign(data, g, {zona: data.city}); }
@@ -2635,6 +2686,7 @@ function viewSettings(){
       <label>PEC<input id="s-pec" value="${esc(s.pec)}"></label>
       <label>Aliquota IVA %<input type="number" id="s-iva" value="${s.vatRate}"></label>
       <label>Servizi e prezzi (uno per riga: nome;prezzo)<textarea id="s-svc" rows="6">${esc(s.services.map(x => x.name + ';' + x.price).join('\n'))}</textarea></label>
+      <label>Tipi di intervento / impianti (uno per riga, si scelgono negli appuntamenti e nei giri)<textarea id="s-tipi" rows="6">${esc((s.tipiIntervento || []).join('\n'))}</textarea></label>
       <label>Messaggio comunicazioni<textarea id="s-wa" rows="3">${esc(s.waTemplate)}</textarea></label>
       <label>Messaggio promemoria<textarea id="s-rem" rows="3">${esc(s.reminderTpl)}</textarea></label>
       <label>Messaggio di conferma cambio filtri ({nome} {operatore} {data} {ora})<textarea id="s-conf" rows="3">${esc(s.confirmTpl)}</textarea></label>
@@ -2659,7 +2711,7 @@ function saveSettings(){
   Object.assign(db.settings, {
     company: val('s-company').trim(), vat: val('s-vat').trim(), address: val('s-address').trim(),
     site: val('s-site').trim(), regime: val('s-regime').trim(), sdi: val('s-sdi').trim(), pec: val('s-pec').trim(),
-    vatRate: +val('s-iva') || 22, services, waTemplate: val('s-wa'), reminderTpl: val('s-rem'), confirmTpl: val('s-conf')
+    vatRate: +val('s-iva') || 22, services, tipiIntervento: val('s-tipi').split('\n').map(x => x.trim()).filter(Boolean), waTemplate: val('s-wa'), reminderTpl: val('s-rem'), confirmTpl: val('s-conf')
   });
   commit();
   alert('Impostazioni salvate.');
@@ -2728,7 +2780,11 @@ const RICHIESTE = [
   {data:'2026-10-27', sezione:'QR code', testo:'Togli logo da qr', stato:'fatta',
    risposta:'Fatto: il QR code ora è senza logo. Se un giorno lo vorrai di nuovo, basta spuntare la casella "Logo al centro del QR" nella stessa pagina.'},
   {data:'2026-10-27', sezione:'Pianifica giri', testo:"LE DATE DI PROGRAMMAZIONE DEVONO FARE RIFERIMENTO AL MESE SOLARE , CIOE' VISUALIZZARE PER OGNI SINGOLO MESE TUTTE LE MANUTENZIONI IN PROGRAMMA SENZA CONSIDERARE UN GIORNO SPECIFICO.\nCOME INSERISCO NELLA PIANIFICAZIONE UN CLIENTE  NUOVO DA ISTALLARE E CHE QUINDI NON E' NEL DATABASE?\nCOME FACCIO A SCEGLIERE IL PUNTO DI PARTENZA AVENDO DIVERSE CITTA' NELLA STESSA GIORNATA?", stato:'fatta',
-   risposta:'1) In "Pianifica giri" c\'è il nuovo riquadro "📋 Manutenzioni del mese": scegli il mese e i comuni e vedi tutte le manutenzioni del mese solare, senza giorno, divise in Da programmare, Nel piano giri, In agenda e Fatte. Con "Mostra tutte" hai l\'elenco completo. 2) In ogni giro c\'è il pulsante "➕ Cliente nuovo da installare": scrivi nome, telefono, comune e indirizzo e il cliente entra nel giro nel punto più comodo (installazione da 90 minuti); poi tocca la mappa sulla casa per posizionarlo con precisione. Dopo l\'installazione il gestionale programma da solo il primo cambio filtri. 3) In ogni giro c\'è "Partenza": scegli Sede, Dal primo cliente oppure il comune da cui parte il tecnico; il percorso e gli orari si ricalcolano da lì.'}
+   risposta:'1) In "Pianifica giri" c\'è il nuovo riquadro "📋 Manutenzioni del mese": scegli il mese e i comuni e vedi tutte le manutenzioni del mese solare, senza giorno, divise in Da programmare, Nel piano giri, In agenda e Fatte. Con "Mostra tutte" hai l\'elenco completo. 2) In ogni giro c\'è il pulsante "➕ Cliente nuovo da installare": scrivi nome, telefono, comune e indirizzo e il cliente entra nel giro nel punto più comodo (installazione da 90 minuti); poi tocca la mappa sulla casa per posizionarlo con precisione. Dopo l\'installazione il gestionale programma da solo il primo cambio filtri. 3) In ogni giro c\'è "Partenza": scegli Sede, Dal primo cliente oppure il comune da cui parte il tecnico; il percorso e gli orari si ricalcolano da lì.'},
+  {data:'2026-10-28', sezione:'Pianifica giri', testo:'PER OGNI CLIENTE MESSO IN AGENDA, DEVO AVERE LA POSSIBILITA\' DI SPECIFICARE IL TIPO DI INTERVENTO CHE IL TECNICO DOVRA\' FARE. NON SONO TUTTI GLI STESSI IMPIANTI. ABBIAMO IMPIANTI DIFFERENTI E IL TECNIVO LO DEVE SAPERE PRIMA DI ANDARE DAL CLIENTE', stato:'fatta',
+   risposta:'Fatto. Ogni appuntamento ora ha il campo "Tipo di intervento / impianto": lo scegli dall\'elenco (es. Cambio filtri osmosi inversa 5 stadi, Cambio filtri sottolavello 3 filtri, Cambio filtri + lampada UV…) oppure lo scrivi tu. Lo trovi in Agenda → Nuovo appuntamento o Modifica, e in Pianifica giri sotto ogni cliente del giro (tasto ✏️). Il tecnico lo vede in evidenza (🛠️) nell\'Agenda, in "Il mio giro" e nel rapporto stampabile, prima di partire. L\'elenco dei tipi si modifica in Impostazioni.'},
+  {data:'2026-10-28', sezione:'Pianifica giri', testo:'DEVO AVERE LA POSSIBILITA\' DI SCRIVERE IL TIPO DI INTERVENTO CHE IL TECNICO FARA\' DAL CLIENTE CHE SI RITROVA IN AGENDA. ABBIAMO DIVERSI IMPIANTI E DEVO SPECIFICARE IL TIPO DI CAMBIO FILTRI EFFETTUARE.\nDEVO POTER INSERIRE IN AGENDA UN CLIENTE CHE NON DEVE CAMBIARE I FILTRI MA CHE HA BISOGNO DEL TECNICO PER UN GUASTO E SPECIFICARE IL PROBLEMA CHE ESPONE IL CLIENTE', stato:'fatta',
+   risposta:'Fatto. 1) Il tipo di cambio filtri si scrive in ogni appuntamento (campo "Tipo di intervento / impianto") e in ogni cliente dei giri (tasto ✏️); viene ricordato nella scheda del cliente, così la volta dopo è già compilato. 2) In Agenda c\'è il nuovo pulsante "🔧 Cliente con un guasto": scegli cliente, giorno, ora e tecnico e scrivi il problema segnalato dal cliente (es. perde acqua, non eroga). Il tecnico vede il problema in rosso nel suo giro e nel rapporto.'}
 ];
 const REQ_STATI = {ricevuta:['Ricevuta',''], lavorazione:['In lavorazione','in_corso'], fatta:['Fatta','completato'], chiarire:['Da chiarire','annullato']};
 function reqForm(){
