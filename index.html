@@ -78,6 +78,7 @@ th{font-size:13px;color:var(--muted);font-weight:600}
 .appt .at{margin-bottom:4px}
 .note{font-size:13px;color:var(--muted);font-style:italic;margin-top:4px}
 .interv{font-size:13px;font-weight:600;margin-top:4px}
+.importo{font-size:13px;font-weight:600;margin-top:4px;color:#0b6b2f}
 .guasto{font-size:13px;margin-top:4px;padding:6px 8px;border-radius:6px;background:#fdecea;color:#8a1f17}
 .row-acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .row-acts select{padding:4px}
@@ -937,6 +938,7 @@ function appForm(pre = {}, id){
       <input type="hidden" id="f-clientid" value="${esc(a.clientId)}">
       <label>Servizio<select id="f-service" onchange="document.getElementById('f-price').value=this.selectedOptions[0].dataset.price;document.getElementById('f-guasto').style.display=this.value===GUASTO?'':'none'">${db.settings.services.map(s => `<option value="${esc(s.name)}" data-price="${s.price}" ${s.name === a.service ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></label>
       <label>Prezzo manodopera (€)<input type="number" step="0.01" id="f-price" value="${a.price}"></label>
+      <label class="full">💶 Importo che il cliente dovrà pagare (€) <small class="muted">lo vede il tecnico</small><input type="number" step="0.01" min="0" id="f-importo" value="${a.importo ?? ''}" placeholder="Scrivi l'importo da incassare"></label>
       <label class="full" id="f-guasto" style="${a.service === GUASTO ? '' : 'display:none'}">🔧 Problema segnalato dal cliente (lo legge il tecnico prima di partire)<textarea id="f-problema" rows="3" placeholder="Es. perde acqua sotto il lavello, il rubinetto non eroga, spia rossa accesa…">${esc(a.problema || '')}</textarea></label>
       <label class="full">Tipo di intervento / impianto (cosa deve fare il tecnico)<input id="f-interv" list="tipi-list" value="${esc(a.intervento || '')}" placeholder="Scegli dall'elenco o scrivi"></label>
       ${tipiList()}
@@ -966,6 +968,7 @@ function tipiList(){
 // Tipo di intervento e problema del guasto, ben visibili per il tecnico
 function intervHtml(a){
   return (a.intervento ? `<div class="interv">🛠️ ${esc(a.intervento)}</div>` : '')
+    + (a.importo != null && a.importo !== '' ? `<div class="importo">💶 Da pagare: ${eur(a.importo)}</div>` : '')
     + (a.problema ? `<div class="guasto"><b>Problema segnalato:</b> ${esc(a.problema)}</div>` : '');
 }
 function saveAppt(id){
@@ -974,6 +977,7 @@ function saveAppt(id){
     date: val('f-date'), time: val('f-time'), duration: +val('f-dur') || 60,
     clientId: val('f-clientid'), techId: val('f-tech'), service: val('f-service'), price: +val('f-price') || 0,
     address: val('f-address').trim(), notes: val('f-notes').trim(), status: val('f-status'), materials: readMats(),
+    importo: val('f-importo') === '' ? '' : round2(+val('f-importo')),
     intervento: val('f-interv').trim(), problema: val('f-service') === GUASTO ? val('f-problema').trim() : ''
   };
   if (!a.date || !a.time || !a.clientId) return alert('Compila data, ora e cliente (scegli un cliente dall\'elenco).');
@@ -1886,6 +1890,7 @@ function rapporto(id){
     <tr><th>Servizio</th><td>${esc(a.service)}</td></tr>
     ${a.intervento ? `<tr><th>Tipo di intervento</th><td>${esc(a.intervento)}</td></tr>` : ''}
     ${a.problema ? `<tr><th>Problema segnalato</th><td>${esc(a.problema)}</td></tr>` : ''}
+    ${a.importo != null && a.importo !== '' ? `<tr><th>Importo da pagare</th><td>${eur(a.importo)}</td></tr>` : ''}
     <tr><th>Tecnico</th><td>${esc(tname(a.techId))}</td></tr>
     <tr><th>Stato</th><td>${STATUS[a.status]}</td></tr>
     <tr><th>Note</th><td>${esc(a.notes) || '—'}</td></tr></table>
@@ -2784,7 +2789,9 @@ const RICHIESTE = [
   {data:'2026-10-28', sezione:'Pianifica giri', testo:'PER OGNI CLIENTE MESSO IN AGENDA, DEVO AVERE LA POSSIBILITA\' DI SPECIFICARE IL TIPO DI INTERVENTO CHE IL TECNICO DOVRA\' FARE. NON SONO TUTTI GLI STESSI IMPIANTI. ABBIAMO IMPIANTI DIFFERENTI E IL TECNIVO LO DEVE SAPERE PRIMA DI ANDARE DAL CLIENTE', stato:'fatta',
    risposta:'Fatto. Ogni appuntamento ora ha il campo "Tipo di intervento / impianto": lo scegli dall\'elenco (es. Cambio filtri osmosi inversa 5 stadi, Cambio filtri sottolavello 3 filtri, Cambio filtri + lampada UV…) oppure lo scrivi tu. Lo trovi in Agenda → Nuovo appuntamento o Modifica, e in Pianifica giri sotto ogni cliente del giro (tasto ✏️). Il tecnico lo vede in evidenza (🛠️) nell\'Agenda, in "Il mio giro" e nel rapporto stampabile, prima di partire. L\'elenco dei tipi si modifica in Impostazioni.'},
   {data:'2026-10-28', sezione:'Pianifica giri', testo:'DEVO AVERE LA POSSIBILITA\' DI SCRIVERE IL TIPO DI INTERVENTO CHE IL TECNICO FARA\' DAL CLIENTE CHE SI RITROVA IN AGENDA. ABBIAMO DIVERSI IMPIANTI E DEVO SPECIFICARE IL TIPO DI CAMBIO FILTRI EFFETTUARE.\nDEVO POTER INSERIRE IN AGENDA UN CLIENTE CHE NON DEVE CAMBIARE I FILTRI MA CHE HA BISOGNO DEL TECNICO PER UN GUASTO E SPECIFICARE IL PROBLEMA CHE ESPONE IL CLIENTE', stato:'fatta',
-   risposta:'Fatto. 1) Il tipo di cambio filtri si scrive in ogni appuntamento (campo "Tipo di intervento / impianto") e in ogni cliente dei giri (tasto ✏️); viene ricordato nella scheda del cliente, così la volta dopo è già compilato. 2) In Agenda c\'è il nuovo pulsante "🔧 Cliente con un guasto": scegli cliente, giorno, ora e tecnico e scrivi il problema segnalato dal cliente (es. perde acqua, non eroga). Il tecnico vede il problema in rosso nel suo giro e nel rapporto.'}
+   risposta:'Fatto. 1) Il tipo di cambio filtri si scrive in ogni appuntamento (campo "Tipo di intervento / impianto") e in ogni cliente dei giri (tasto ✏️); viene ricordato nella scheda del cliente, così la volta dopo è già compilato. 2) In Agenda c\'è il nuovo pulsante "🔧 Cliente con un guasto": scegli cliente, giorno, ora e tecnico e scrivi il problema segnalato dal cliente (es. perde acqua, non eroga). Il tecnico vede il problema in rosso nel suo giro e nel rapporto.'},
+  {data:'2026-10-28', sezione:'Agenda', testo:"DEVO SCRIVERE L'IMPORTO CHE IL CLIENTE DOVRA' PAGARE.", stato:'fatta',
+   risposta:'Fatto. In Agenda, quando crei o modifichi un appuntamento, c\'è il nuovo campo "💶 Importo che il cliente dovrà pagare": scrivi la cifra da incassare. Il tecnico la vede in verde ("💶 Da pagare") nell\'Agenda, in "Il mio giro" e nel rapporto stampabile. Se lasci il campo vuoto non compare nulla.'}
 ];
 const REQ_STATI = {ricevuta:['Ricevuta',''], lavorazione:['In lavorazione','in_corso'], fatta:['Fatta','completato'], chiarire:['Da chiarire','annullato']};
 function reqForm(){
