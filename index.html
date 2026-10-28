@@ -692,7 +692,11 @@ function pendingAppts(ym){
 function completedIn(cid, ym){
   return db.appointments.filter(a => a.clientId === cid && a.status === 'completato' && monthOf(a.date) === ym);
 }
+// Importo scritto dalla segreteria (IVA inclusa): se c'è, è quello che va in fattura al posto di manodopera + materiali
+const hasImporto = a => a.importo != null && a.importo !== '';
+const nettoImporto = (a, rate = db.settings.vatRate) => round2(+a.importo / (1 + rate / 100));
 function appTotal(a){
+  if (hasImporto(a)) return nettoImporto(a);
   return round2(a.price + (a.materials || []).reduce((s,m) => { const it = byId(db.items, m.itemId); return s + (it ? it.price * m.qty : 0); }, 0));
 }
 const cname = id => (byId(db.clients, id) || {name:'—'}).name;
@@ -730,18 +734,27 @@ function nextNumber(date, dbx = db){
   return y + '/' + pad(max + 1, 4);
 }
 function createInvoice(cid, apps, date = ymd(new Date()), dbx = db, quiet = false){
-  const lines = [];
+  const lines = [], rate = dbx.settings.vatRate;
+  let lordo = 0, nettoAltri = 0;
   apps.forEach(a => {
+    if (hasImporto(a)) {
+      const mats = (a.materials || []).map(m => { const it = byId(dbx.items, m.itemId); return it ? `${it.name} x${m.qty}` : ''; }).filter(Boolean);
+      lines.push({desc:`${a.service} - ${fmtDate(a.date)}${a.address ? ' - ' + a.address : ''}${mats.length ? ' (materiali inclusi: ' + mats.join(', ') + ')' : ''}`, qty:1, price:nettoImporto(a, rate)});
+      lordo += +a.importo;
+      return;
+    }
+    const n0 = lines.length;
     lines.push({desc:`${a.service} - ${fmtDate(a.date)}${a.address ? ' - ' + a.address : ''}`, qty:1, price:a.price});
     (a.materials || []).forEach(m => {
       const it = byId(dbx.items, m.itemId);
       if (it) lines.push({desc:`Materiale: ${it.name}`, qty:m.qty, price:it.price});
     });
+    nettoAltri += lines.slice(n0).reduce((s,l) => s + l.qty * l.price, 0);
   });
   const imponibile = round2(lines.reduce((s,l) => s + l.qty * l.price, 0));
-  const rate = dbx.settings.vatRate;
+  // Il totale rispetta al centesimo gli importi scritti (IVA inclusa)
   const inv = {id:uid(), number:nextNumber(date, dbx), date, clientId:cid, lines, imponibile, ivaRate:rate,
-    totale:round2(imponibile * (1 + rate / 100)), status:'da incassare', apptIds:apps.map(a => a.id)};
+    totale:round2(lordo + nettoAltri * (1 + rate / 100)), status:'da incassare', apptIds:apps.map(a => a.id)};
   dbx.invoices.push(inv);
   return inv;
 }
@@ -938,7 +951,7 @@ function appForm(pre = {}, id){
       <input type="hidden" id="f-clientid" value="${esc(a.clientId)}">
       <label>Servizio<select id="f-service" onchange="document.getElementById('f-price').value=this.selectedOptions[0].dataset.price;document.getElementById('f-guasto').style.display=this.value===GUASTO?'':'none'">${db.settings.services.map(s => `<option value="${esc(s.name)}" data-price="${s.price}" ${s.name === a.service ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></label>
       <label>Prezzo manodopera (€)<input type="number" step="0.01" id="f-price" value="${a.price}"></label>
-      <label class="full">💶 Importo che il cliente dovrà pagare (€) <small class="muted">lo vede il tecnico</small><input type="number" step="0.01" min="0" id="f-importo" value="${a.importo ?? ''}" placeholder="Scrivi l'importo da incassare"></label>
+      <label class="full">💶 Importo che il cliente dovrà pagare (€) <small class="muted">IVA inclusa · lo vede il tecnico e va in fattura al posto di manodopera e materiali</small><input type="number" step="0.01" min="0" id="f-importo" value="${a.importo ?? ''}" placeholder="Scrivi l'importo da incassare"></label>
       <label class="full" id="f-guasto" style="${a.service === GUASTO ? '' : 'display:none'}">🔧 Problema segnalato dal cliente (lo legge il tecnico prima di partire)<textarea id="f-problema" rows="3" placeholder="Es. perde acqua sotto il lavello, il rubinetto non eroga, spia rossa accesa…">${esc(a.problema || '')}</textarea></label>
       <label class="full">Tipo di intervento / impianto (cosa deve fare il tecnico)<input id="f-interv" list="tipi-list" value="${esc(a.intervento || '')}" placeholder="Scegli dall'elenco o scrivi"></label>
       ${tipiList()}
@@ -2375,7 +2388,7 @@ function exportInvoicesCsv(){
 function printInvoice(id){
   const inv = byId(db.invoices, id), c = byId(db.clients, inv.clientId) || {}, s = db.settings;
   const rows = inv.lines.map(l => `<tr><td>${esc(l.desc)}</td><td class="r">${l.qty}</td><td class="r">${eur(l.price)}</td><td class="r">${eur(round2(l.qty * l.price))}</td></tr>`).join('');
-  const iva = round2(inv.imponibile * inv.ivaRate / 100);
+  const iva = round2(inv.totale - inv.imponibile);
   const w = window.open('', '_blank');
   if (!w) return alert('Consenti i pop-up per stampare la fattura.');
   w.document.write(`<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Fattura ${esc(inv.number)}</title>
@@ -2791,7 +2804,7 @@ const RICHIESTE = [
   {data:'2026-10-28', sezione:'Pianifica giri', testo:'DEVO AVERE LA POSSIBILITA\' DI SCRIVERE IL TIPO DI INTERVENTO CHE IL TECNICO FARA\' DAL CLIENTE CHE SI RITROVA IN AGENDA. ABBIAMO DIVERSI IMPIANTI E DEVO SPECIFICARE IL TIPO DI CAMBIO FILTRI EFFETTUARE.\nDEVO POTER INSERIRE IN AGENDA UN CLIENTE CHE NON DEVE CAMBIARE I FILTRI MA CHE HA BISOGNO DEL TECNICO PER UN GUASTO E SPECIFICARE IL PROBLEMA CHE ESPONE IL CLIENTE', stato:'fatta',
    risposta:'Fatto. 1) Il tipo di cambio filtri si scrive in ogni appuntamento (campo "Tipo di intervento / impianto") e in ogni cliente dei giri (tasto ✏️); viene ricordato nella scheda del cliente, così la volta dopo è già compilato. 2) In Agenda c\'è il nuovo pulsante "🔧 Cliente con un guasto": scegli cliente, giorno, ora e tecnico e scrivi il problema segnalato dal cliente (es. perde acqua, non eroga). Il tecnico vede il problema in rosso nel suo giro e nel rapporto.'},
   {data:'2026-10-28', sezione:'Agenda', testo:"DEVO SCRIVERE L'IMPORTO CHE IL CLIENTE DOVRA' PAGARE.", stato:'fatta',
-   risposta:'Fatto. In Agenda, quando crei o modifichi un appuntamento, c\'è il nuovo campo "💶 Importo che il cliente dovrà pagare": scrivi la cifra da incassare. Il tecnico la vede in verde ("💶 Da pagare") nell\'Agenda, in "Il mio giro" e nel rapporto stampabile. Se lasci il campo vuoto non compare nulla.'}
+   risposta:'Fatto. In Agenda, quando crei o modifichi un appuntamento, c\'è il nuovo campo "💶 Importo che il cliente dovrà pagare": scrivi la cifra da incassare. Il tecnico la vede in verde ("💶 Da pagare") nell\'Agenda, in "Il mio giro" e nel rapporto stampabile. Se lasci il campo vuoto non compare nulla. Aggiornamento: l\'importo (IVA inclusa) va anche in fattura, al posto di manodopera e materiali; il totale della fattura è proprio la cifra che hai scritto.'}
 ];
 const REQ_STATI = {ricevuta:['Ricevuta',''], lavorazione:['In lavorazione','in_corso'], fatta:['Fatta','completato'], chiarire:['Da chiarire','annullato']};
 function reqForm(){
