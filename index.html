@@ -834,7 +834,7 @@ function showLogin(err = ''){
   $('#login').innerHTML = `<div class="login-box">
     <div class="brand">Watergold</div>
     <h2 style="margin:0">Accesso al gestionale</h2>
-    <p class="muted small" style="margin:0">${SERVER ? 'Accesso personale: email e password che ti ha dato la segreteria.' : 'Dati fittizi di dimostrazione.'}</p>
+    <p class="muted small" style="margin:0">${SERVER ? 'Accesso della segreteria con email e password. Tecnici: chiedete alla segreteria il link per collegare il telefono.' : 'Dati fittizi di dimostrazione.'}</p>
     ${err ? `<p class="err">${esc(err)}</p>` : ''}
     <label>Email<input id="l-email" type="email" autocomplete="username"></label>
     <label>Password<input id="l-pass" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()"></label>
@@ -853,6 +853,7 @@ async function login(){
 }
 async function logout(){
   if (SERVER) {
+    if (me && me.role === 'tecnico' && !confirm('Vuoi uscire? Per rientrare servirà un nuovo collegamento del telefono dalla segreteria.')) return;
     await srvSync();
     try { await srvApi('/api/logout', {}); } catch(e) {}
     try { localStorage.removeItem(SRV_KEY); } catch(e) {}
@@ -906,6 +907,7 @@ function render(){
   if (view === 'clienti') drawClients();
   if (view === 'magazzino') drawStock();
   if (view === 'qr') makeQr();
+  if (view === 'impost' && SERVER) caricaTelefoni();
   if (view === 'pianifica') drawPlanMap(); else if (plMapObj) { plMapObj.remove(); plMapObj = null; }
   if (view === 'magazzino' && ui.scanned) setTimeout(() => { const s = document.getElementById('scan'); if (s) s.focus(); }, 0);
 }
@@ -3048,10 +3050,13 @@ function viewSettings(){
       <div class="tbl-wrap"><table><thead><tr><th>Nome</th><th>Ruolo</th><th></th></tr></thead><tbody>
       ${db.users.map(u => `<tr><td><span class="badge" style="background:${u.color};color:#fff">&nbsp;</span> <b>${esc(u.name)}</b><br><small class="muted">${esc(u.email)}</small></td>
         <td>${u.role === 'admin' ? 'Titolare / segreteria' : 'Tecnico'}</td>
-        <td class="acts"><button class="ghost sm" onclick="userForm('${u.id}')">Modifica</button><button class="danger sm" onclick="delUser('${u.id}')">✕</button></td></tr>`).join('')}
+        <td class="acts">${SERVER && u.role === 'tecnico' ? `<button class="sm" onclick="collegaTelefono('${u.id}')">📱 Collega telefono</button>` : ''}<button class="ghost sm" onclick="userForm('${u.id}')">Modifica</button><button class="danger sm" onclick="delUser('${u.id}')">✕</button></td></tr>`).join('')}
       </tbody></table></div>
       <div class="actions" style="margin-top:10px"><button class="ghost" onclick="userForm()">+ Nuovo utente</button></div>
     </div>
+    ${SERVER ? `<div class="card"><h3>📱 Telefoni dei tecnici</h3>
+      <p class="muted small" style="margin-top:0">Telefoni collegati con "Collega telefono". Se un telefono si perde o cambia, revocalo: esce subito.</p>
+      <div id="dev-list" class="small muted">Caricamento…</div></div>` : ''}
   </div>`;
 }
 function saveSettings(){
@@ -3073,21 +3078,26 @@ function userForm(id){
   modal(id ? 'Modifica utente' : 'Nuovo utente', `
     <div class="grid2">
       <label>Nome e cognome<input id="u-name" value="${esc(u.name)}"></label>
-      <label>Email (per l'accesso)<input id="u-email" type="email" value="${esc(u.email)}"></label>
+      <label>Email (per l'accesso)${SERVER ? ' <small class="muted">i tecnici possono lasciarla vuota</small>' : ''}<input id="u-email" type="email" value="${esc(u.email)}"></label>
       <label>Ruolo<select id="u-role"><option value="tecnico" ${u.role === 'tecnico' ? 'selected' : ''}>Tecnico</option><option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Titolare / segreteria</option></select></label>
       <label>Telefono<input id="u-phone" value="${esc(u.phone)}"></label>
       <label>Colore in agenda<input id="u-color" type="color" value="${u.color}"></label>
-      <label>Password ${id ? '(lascia vuoto per non cambiarla)' : ''}<input id="u-pass" type="password"></label>
-    </div>`,
+      <label>Password ${id ? '(lascia vuoto per non cambiarla)' : ''}${SERVER ? ' <small class="muted">solo per la segreteria</small>' : ''}<input id="u-pass" type="password"></label>
+    </div>
+    ${SERVER ? '<p class="muted small">I tecnici non hanno bisogno di email e password: dopo aver salvato, usa "📱 Collega telefono" nell\'elenco utenti.</p>' : ''}`,
     `<button class="ghost" onclick="closeModal()">Annulla</button><button onclick="saveUser('${id || ''}')">Salva</button>`);
 }
 function saveUser(id){
   if (!requireAdmin()) return;
   const name = val('u-name').trim(), email = val('u-email').trim().toLowerCase(), role = val('u-role'), pass = val('u-pass');
-  if (!name || !email) return alert('Nome ed email sono obbligatori.');
-  if (db.users.some(u => u.email === email && u.id !== id)) return alert('Email già usata da un altro utente.');
+  // con il server i tecnici entrano dal telefono collegato dalla segreteria: email e password servono solo alla segreteria
+  const conAccesso = !SERVER || role === 'admin';
+  if (!name || (conAccesso && !email)) return alert(conAccesso ? 'Nome ed email sono obbligatori.' : 'Il nome è obbligatorio.');
+  if (email && db.users.some(u => u.email === email && u.id !== id)) return alert('Email già usata da un altro utente.');
   const minPw = SERVER ? 10 : 6;
-  if ((!id || pass) && pass.length < minPw) return alert(`La password deve avere almeno ${minPw} caratteri.`);
+  const diventaAdmin = SERVER && role === 'admin' && (!id || byId(db.users, id).role !== 'admin');
+  if (diventaAdmin && !pass) return alert('Per un utente della segreteria servono email e password (almeno 10 caratteri).');
+  if (((!id && conAccesso) || pass) && pass.length < minPw) return alert(`La password deve avere almeno ${minPw} caratteri.`);
   const data = {name, email, role, phone: val('u-phone').trim(), color: val('u-color')};
   // con il server la password va solo al server, che la conserva cifrata: mai nei dati condivisi
   if (id) {
@@ -3098,10 +3108,49 @@ function saveUser(id){
   } else {
     const nid = 'u' + uid();
     db.users.push(SERVER ? {id: nid, ...data} : {id: nid, ...data, pass:hashPw(pass)});
-    if (SERVER) srvPw[nid] = pass;
+    if (SERVER && pass) srvPw[nid] = pass;
   }
   closeModal();
   commit();
+}
+// Link monouso (30 minuti) per collegare il telefono di un tecnico: QR da inquadrare o messaggio WhatsApp
+async function collegaTelefono(id){
+  if (!requireAdmin()) return;
+  const u = byId(db.users, id);
+  // un tecnico appena creato deve essere già sul server
+  for (let i = 0; i < 20 && (srvBusy || srvDirty); i++) { await srvSync(); if (srvBusy || srvDirty) await new Promise(r => setTimeout(r, 300)); }
+  if (srvDirty) return alert('Server non raggiungibile: riprova tra poco.');
+  let r;
+  try { r = await srvApi('/api/abbina', {userId: id}); }
+  catch(e) { return alert('Link non creato: ' + e.message); }
+  const d = digitsOf(u.phone), tel = d.length === 10 && d[0] === '3' ? '39' + d : d;
+  const testo = `Ciao ${u.name.split(' ')[0]}, apri questo link dal tuo telefono e premi "Collega questo telefono" per entrare nel gestionale Watergold (vale ${r.minuti} minuti, una volta sola): ${r.link}`;
+  modal('📱 Collega il telefono di ' + esc(u.name), `
+    <p>Dal telefono del tecnico <b>inquadra il QR</b> con la fotocamera, oppure mandagli il link. Il link vale <b>${r.minuti} minuti</b> e <b>una volta sola</b>.</p>
+    <div id="dev-qr" style="display:flex;justify-content:center;margin:12px 0"></div>
+    <p class="small muted" style="word-break:break-all">${esc(r.link)}</p>
+    <p class="small muted">Sul telefono si apre una pagina con il nome del tecnico e il pulsante "Collega questo telefono". Il telefono resta collegato un anno; lo puoi revocare quando vuoi da questa pagina.</p>`,
+    `<button class="ghost" onclick="navigator.clipboard.writeText(${esc(JSON.stringify(r.link))}).then(()=>alert('Link copiato.'))">Copia link</button>
+     <button onclick="openExt('https://wa.me/${tel}?text=' + encodeURIComponent(${esc(JSON.stringify(testo))}))">Invia su WhatsApp</button>`);
+  try { new QRCode(document.getElementById('dev-qr'), {text: r.link, width: 220, height: 220, colorDark: '#0f2b40', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M}); }
+  catch(e) { document.getElementById('dev-qr').textContent = 'QR non disponibile: usa "Invia su WhatsApp" o "Copia link".'; }
+}
+async function caricaTelefoni(){
+  const el = document.getElementById('dev-list');
+  if (!el) return;
+  try {
+    const {dispositivi} = await srvApi('/api/dispositivi');
+    const STATI = {ok: '🟢 collegato', revocato: '⛔ revocato', attesa: '⏳ in attesa', rifiutato: '⛔ rifiutato'};
+    el.classList.remove('muted');
+    el.innerHTML = dispositivi.length ? dispositivi.map(d => `<div class="rowline"><b>${esc(d.nome)}</b> · ${esc(d.descr || '')} · ${STATI[d.stato] || esc(d.stato)}
+      <span class="muted">dal ${fmtStamp(d.creato)}</span> ${d.stato === 'ok' ? `<button class="danger sm" onclick="revocaTelefono(${d.n}, ${esc(JSON.stringify(d.nome))})">Revoca</button>` : ''}</div>`).join('')
+      : '<p class="muted">Nessun telefono collegato.</p>';
+  } catch(e) { el.textContent = 'Elenco non disponibile (' + e.message + ').'; }
+}
+async function revocaTelefono(n, nome){
+  if (!confirm(`Revocare questo telefono di ${nome}? Uscirà subito; per rientrare servirà un nuovo collegamento.`)) return;
+  try { await srvApi('/api/revoca', {n}); } catch(e) { return alert('Revoca non riuscita: ' + e.message); }
+  caricaTelefoni();
 }
 function delUser(id){
   if (!requireAdmin()) return;
