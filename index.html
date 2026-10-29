@@ -1174,6 +1174,8 @@ function pickClient(text){
   if (hit) document.getElementById('f-address').value = hit.address;
   const iv = document.getElementById('f-interv');
   if (hit && iv && !iv.value && hit.tipoIntervento) iv.value = hit.tipoIntervento;
+  const imp = document.getElementById('f-importo');
+  if (hit && imp && imp.value === '' && hit.costo !== undefined && hit.costo !== '') imp.value = hit.costo;
 }
 // Elenco dei tipi di intervento da scegliere (si può anche scrivere un testo libero)
 function tipiList(){
@@ -1477,7 +1479,7 @@ function bookConfirmed(){
     if (s.call !== 'confermato' || s.apptId) return;
     const isI = s.tipo === 'installazione';
     const a = {id: uid(), date: d.date, time: minToT(eta), duration: stopDur(s), clientId: c.id, techId: r.techId, service: isI ? inst.name : FILTRI, price: isI ? inst.price : svc.price,
-      address: c.address, intervento: s.intervento || (isI ? '' : c.tipoIntervento || ''), problema: '', notes: isI ? 'Nuovo cliente · installazione confermata al telefono' : 'Confermato al telefono · giro pianificato automaticamente', status: 'programmato',
+      address: c.address, intervento: s.intervento || (isI ? '' : c.tipoIntervento || ''), problema: '', importo: isI ? '' : (c.costo ?? ''), notes: isI ? 'Nuovo cliente · installazione confermata al telefono' : 'Confermato al telefono · giro pianificato automaticamente', status: 'programmato',
       materials: isI ? [] : kit.filter(m => byId(db.items, m.itemId)).map(m => ({...m})), stockApplied: false};
     db.appointments.push(a);
     s.apptId = a.id;
@@ -2184,13 +2186,15 @@ function clientCard(id){
   const invs = isAdmin() ? db.invoices.filter(i => i.clientId === id).sort((a,b) => b.date.localeCompare(a.date)).slice(0,8) : [];
   modal(`${esc(c.name)} <small class="muted">${esc(c.codice)}</small>`, `
     <div class="grid2">
-      <div><b>Indirizzo</b><br>${esc(c.address)}${c.zona && c.zona !== c.city ? '<br><small class="muted">Zona ' + esc(c.zona) + '</small>' : ''}${c.lat ? `<br><a href="https://www.google.com/maps/search/?api=1&query=${c.lat},${c.lng}" target="_blank" rel="noopener">Apri in Google Maps</a>` : ''}</div>
-      <div><b>Cambio filtri</b><br>${c.tipoIntervento ? '🛠️ ' + esc(c.tipoIntervento) + '<br>' : ''}Ogni ${c.filtroMesi || '—'} mesi<br>Ultimo ${c.ultimoCambio ? fmtDate(c.ultimoCambio) : '—'} · prossimo <b>${c.prossimoCambio ? fmtDate(c.prossimoCambio) : '—'}</b></div>
+      <div><b>Indirizzo</b><br>${esc(c.address)}${c.city && !String(c.address).includes(c.city) ? ', ' + esc(c.city) : ''}${c.prov ? ' (' + esc(c.prov) + ')' : ''}${c.zona && c.zona !== c.city ? '<br><small class="muted">Zona ' + esc(c.zona) + '</small>' : ''}${c.lat ? `<br><a href="https://www.google.com/maps/search/?api=1&query=${c.geoApprox ? encodeURIComponent(c.address + ' ' + c.city) : c.lat + ',' + c.lng}" target="_blank" rel="noopener">Apri in Google Maps</a>${c.geoApprox ? '<br><small class="muted">Sulla mappa del gestionale: posizione indicativa (centro del comune)</small>' : ''}` : ''}</div>
+      <div><b>Cambio filtri</b><br>${c.tipoIntervento ? '🛠️ ' + esc(c.tipoIntervento) + '<br>' : ''}Ogni ${c.filtroMesi || '—'} mesi<br>Ultimo ${c.ultimoCambio ? fmtDate(c.ultimoCambio) : '—'} · prossimo <b>${c.prossimoCambio ? fmtDate(c.prossimoCambio) : '—'}</b>${c.costo !== undefined && c.costo !== '' ? '<br>💶 Costo ' + eur(c.costo) : ''}</div>
       <div><b>Contatti</b><br>${esc(c.phone)}<br>${esc(c.email) || '—'}</div>
       ${isAdmin() ? `<div><b>Dati fiscali</b><br>P.IVA/CF ${esc(c.vat) || '—'}<br>SDI ${esc(c.sdi) || '—'} · PEC ${esc(c.pec) || '—'}</div>` : ''}
       <div><b>Privacy</b><br>${c.whatsappOk ? 'Consenso WhatsApp dal ' + (c.consentDate ? fmtDate(c.consentDate) : '—') : 'Nessun consenso WhatsApp'}</div>
     </div>
     ${c.notes ? `<p class="note">${esc(c.notes)}</p>` : ''}
+    ${c.extra && Object.keys(c.extra).length ? `<h3 style="margin-top:14px">Altri dati dal file</h3>
+      <div class="small">${Object.entries(c.extra).map(([k, v]) => `<div class="rowline"><b>${esc(k)}</b> ${esc(v)}</div>`).join('')}</div>` : ''}
     <h3 style="margin-top:14px">Ultimi interventi</h3>
     ${apps.map(a => `<div class="rowline small">${fmtDate(a.date)} ${a.time} · ${esc(a.service)}${a.intervento ? ' · ' + esc(a.intervento) : ''}${a.problema ? ' · ' + esc(a.problema) : ''} · <span class="badge ${a.status}">${STATUS[a.status]}</span></div>`).join('') || '<p class="muted small">Nessuno</p>'}
     ${isAdmin() ? `<h3 style="margin-top:14px">Fatture</h3>${invs.map(i => `<div class="rowline small">${esc(i.number)} · ${fmtDate(i.date)} · ${eur(i.totale)} · ${i.status}</div>`).join('') || '<p class="muted small">Nessuna</p>'}` : ''}`,
@@ -2681,9 +2685,9 @@ function viewDati(){
 }
 function exportClients(fmt){
   if (!requireAdmin()) return;
-  const rows = [['codice','nome','tipo','telefono','email','indirizzo','cap','citta','zona','piva','sdi','pec','mensile','consenso_whatsapp','filtri_ogni_mesi','ultimo_cambio','prossimo_cambio','note']]
-    .concat(db.clients.map(c => [c.codice, c.name, c.type, c.phone, c.email, c.address, c.cap, c.city, c.zona, c.vat, c.sdi, c.pec,
-      c.monthly ? 'si' : 'no', c.whatsappOk ? 'si' : 'no', c.filtroMesi, c.ultimoCambio, c.prossimoCambio, c.notes]));
+  const rows = [['codice','nome','tipo','telefono','email','indirizzo','cap','citta','zona','provincia','piva','sdi','pec','mensile','consenso_whatsapp','intervento','filtri_ogni_mesi','ultimo_cambio','prossimo_cambio','costo','note']]
+    .concat(db.clients.map(c => [c.codice, c.name, c.type, c.phone, c.email, c.address, c.cap, c.city, c.zona, c.prov || '', c.vat, c.sdi, c.pec,
+      c.monthly ? 'si' : 'no', c.whatsappOk ? 'si' : 'no', c.tipoIntervento || '', c.filtroMesi, c.ultimoCambio, c.prossimoCambio, c.costo ?? '', c.notes]));
   writeTable(rows, 'clienti-watergold-' + ymd(new Date()), fmt);
 }
 function exportStock(fmt){
@@ -2702,7 +2706,7 @@ function importClients(input){
     try {
       if (isX) {
         if (typeof XLSX === 'undefined') throw new Error('libreria Excel non caricata (serve la connessione internet). Usa il CSV.');
-        const wb = XLSX.read(reader.result, {type:'array'});
+        const wb = XLSX.read(reader.result, {type:'array'});   // date come numeri di Excel: le converte parseDataIt
         rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, defval:''});
       } else rows = parseCsv(reader.result);
     } catch(e) { return alert('Import non riuscito: ' + e.message); }
@@ -2711,44 +2715,114 @@ function importClients(input){
   if (isX) reader.readAsArrayBuffer(f); else reader.readAsText(f);
   input.value = '';
 }
+// Date dal foglio: numero di Excel, 31/12/2026, 31-12-26, 2026-12-31 o 12/2026 (mese e anno). Vuoto se non riconosciuta.
+function parseDataIt(v){
+  if (v instanceof Date && !isNaN(v)) return ymd(v);
+  const s = String(v ?? '').trim();
+  if (!s) return '';
+  if (/^\d{5}(\.\d+)?$/.test(s) && +s > 20000 && +s < 80000) {
+    const d = new Date(Date.UTC(1899, 11, 30) + Math.floor(+s) * 86400000);
+    return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+  }
+  let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (m) return `${m[1]}-${pad(+m[2])}-${pad(+m[3])}`;
+  m = s.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2}|\d{4})$/);
+  if (m) { const y = m[3].length === 2 ? 2000 + +m[3] : +m[3]; if (+m[2] >= 1 && +m[2] <= 12 && +m[1] >= 1 && +m[1] <= 31) return `${y}-${pad(+m[2])}-${pad(+m[1])}`; }
+  m = s.match(/^(\d{1,2})[\/.\-](\d{4})$/);
+  if (m && +m[1] >= 1 && +m[1] <= 12) return `${m[2]}-${pad(+m[1])}-01`;
+  return '';
+}
+const parseEuro = v => { const s = String(v ?? '').replace(/[€\s]/g, ''); if (!s) return ''; const n = +(/,\d{1,2}$/.test(s) ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, '')); return isFinite(n) ? round2(n) : ''; };
+// Mesi tra due cambi filtri ricavati dalle date (vicino a 6 → 6, altrimenti 12)
+const mesiTra = (a, b) => { if (!a || !b || b <= a) return 0; const m = (new Date(b) - new Date(a)) / (30.44 * 86400000); return m < 9 ? 6 : 12; };
 function planImport(rows){
   if (rows.length < 2) return alert('Il file è vuoto o non contiene righe di dati.');
   const H = rows[0].map(normH);
-  const col = (...names) => { for (const n of names) { const i = H.indexOf(n); if (i >= 0) return i; } return -1; };
-  const ix = {codice:col('codice','codice_cliente','id'), name:col('nome','ragione_sociale','nome_cliente','cliente'), type:col('tipo'),
-    phone:col('telefono','cellulare','tel'), email:col('email','mail'), address:col('indirizzo'), cap:col('cap'),
-    city:col('citta','comune','localita'), vat:col('piva','p_iva','partita_iva','cf','codice_fiscale'), sdi:col('sdi','codice_sdi'),
-    pec:col('pec'), monthly:col('mensile','contratto_mensile'), wa:col('consenso_whatsapp','whatsapp'), notes:col('note')};
-  if (ix.name < 0) return alert('Colonna "nome" non trovata. Intestazioni lette: ' + H.join(', '));
-  const plan = {upd:[], add:[], dup:[], err:0};
+  const used = new Set();
+  const col = (...names) => { for (const n of names) { const i = H.indexOf(n); if (i >= 0) { used.add(i); return i; } } return -1; };
+  const ix = {codice:col('codice','codice_cliente','id'),
+    name:col('nome','cliente','ragione_sociale','nome_cliente','nominativo','nome_e_cognome','cognome_e_nome','cognome_nome'), type:col('tipo','tipo_cliente'),
+    phone:col('telefono','cellulare','tel','cell','recapito','telefono_cellulare','numero'), email:col('email','mail','e_mail'),
+    address:col('indirizzo','via','indirizzo_impianto'), cap:col('cap'), city:col('citta','comune','localita','paese'),
+    zona:col('zona','quartiere'), prov:col('provincia','prov'),
+    vat:col('piva','p_iva','partita_iva','cf','codice_fiscale'), sdi:col('sdi','codice_sdi'),
+    pec:col('pec'), monthly:col('mensile','contratto_mensile'), wa:col('consenso_whatsapp','whatsapp'), notes:col('note','annotazioni'),
+    interv:col('intervento','tipo_intervento','impianto','tipo_impianto','tipo_di_intervento'),
+    ultimo:col('ultima_manutenzione','ultimo_cambio','ultimo_cambio_filtri','data_ultima_manutenzione','ultimo_intervento'),
+    prossimo:col('manutenzione_programmata','prossimo_cambio','prossima_manutenzione','scadenza','prossimo_intervento','data_programmata'),
+    mesi:col('filtri_ogni_mesi','mesi','frequenza','periodicita','frequenza_mesi'), costo:col('costo','importo','prezzo','canone','costo_intervento')};
+  if (ix.name < 0) return alert('Colonna "nome" o "cliente" non trovata. Intestazioni lette: ' + H.join(', '));
+  // le colonne che il gestionale non conosce non si perdono: restano nella scheda del cliente ("Altri dati dal file")
+  const extraCols = rows[0].map((h, i) => ({h: String(h ?? '').trim(), i})).filter(x => x.h && !used.has(x.i));
+  const plan = {upd:[], add:[], dup:[], err:0, merged:0, badDates:0, noGeo:0, extraCols: extraCols.map(x => x.h)};
   const phones = new Set(db.clients.map(c => digitsOf(c.phone)).filter(Boolean));
   const vats = new Set(db.clients.map(c => c.vat).filter(Boolean));
   const byCode = new Map(db.clients.map(c => [c.codice, c]));
+  const inFile = new Map();   // stesso cliente su più righe del file (es. un intervento per riga): una sola scheda
   rows.slice(1).forEach(r => {
     const g = k => ix[k] >= 0 ? String(r[ix[k]] ?? '').trim() : '';
     const name = g('name');
     if (!name) { plan.err++; return; }
-    const data = {name, type: /azienda/i.test(g('type')) ? 'azienda' : 'privato', phone:g('phone'), email:g('email'), address:g('address'),
-      cap:g('cap'), city:g('city'), vat:g('vat'), sdi:g('sdi'), pec:g('pec'), monthly:yes(g('monthly')), whatsappOk:yes(g('wa')), notes:g('notes')};
+    const data = {name};
+    const put = (k, key, v) => { if (ix[k] >= 0) data[key] = v === undefined ? g(k) : v; };
+    put('type', 'type', /azienda/i.test(g('type')) ? 'azienda' : 'privato');
+    ['phone','email','address','cap','city','zona','vat','sdi','pec','notes'].forEach(k => put(k, k));
+    // Excel toglie lo 0 iniziale ai numeri fissi scritti come numero (091… → 91…): si rimette
+    if (ix.phone >= 0 && typeof r[ix.phone] === 'number' && /^[1-9]\d{7,9}$/.test(data.phone) && data.phone[0] !== '3') data.phone = '0' + data.phone;
+    put('prov', 'prov', g('prov').toUpperCase());
+    put('monthly', 'monthly', yes(g('monthly')));
+    put('wa', 'whatsappOk', yes(g('wa')));
+    put('interv', 'tipoIntervento');
+    put('costo', 'costo', parseEuro(r[ix.costo]));
+    ['ultimo','prossimo'].forEach(k => {
+      if (ix[k] < 0) return;
+      const raw = r[ix[k]], d = parseDataIt(raw);
+      if (String(raw ?? '').trim() && !d) plan.badDates++;
+      data[k === 'ultimo' ? 'ultimoCambio' : 'prossimoCambio'] = d;
+    });
+    if (ix.mesi >= 0 && +g('mesi') > 0) data.filtroMesi = +g('mesi');
+    if (ix.city >= 0 && !data.zona) data.zona = data.city;
+    const extra = {};
+    extraCols.forEach(x => { const v = r[x.i]; if (String(v ?? '').trim()) extra[x.h] = v instanceof Date ? ymd(v) : String(v).trim(); });
+    if (Object.keys(extra).length) data.extra = extra;
     const ex = g('codice') ? byCode.get(g('codice')) : null;
     if (ex) { plan.upd.push({ex, data}); return; }
     const dig = digitsOf(data.phone);
+    const key = name.toLowerCase().replace(/\s+/g, ' ') + '|' + dig;
+    const prev = inFile.get(key);
+    if (prev) {
+      // righe dello stesso cliente: si tengono le date più recenti e i dati non vuoti
+      ['ultimoCambio','prossimoCambio'].forEach(k => { if (data[k] && (!prev[k] || data[k] > prev[k])) prev[k] = data[k]; });
+      Object.entries(data).forEach(([k, v]) => { if (!['ultimoCambio','prossimoCambio','extra'].includes(k) && v !== '' && v != null) prev[k] = v; });
+      if (data.extra) prev.extra = {...(prev.extra || {}), ...data.extra};
+      plan.merged++;
+      return;
+    }
     if ((dig && phones.has(dig)) || (data.vat && vats.has(data.vat))) { plan.dup.push(name); return; }
     if (dig) phones.add(dig);
     if (data.vat) vats.add(data.vat);
+    inFile.set(key, data);
     plan.add.push(data);
   });
+  plan.add.forEach(d => {
+    if (!d.filtroMesi) d.filtroMesi = mesiTra(d.ultimoCambio, d.prossimoCambio) || 6;
+    if (!d.prossimoCambio && d.ultimoCambio) d.prossimoCambio = addMonths(d.ultimoCambio, d.filtroMesi);
+    if (!geoGuess(d.city)) plan.noGeo++;
+  });
   pendingPlan = plan;
-  const changed = plan.upd.filter(({ex, data}) => ['name','phone','email','address','city','cap','vat','monthly','whatsappOk','notes']
-    .some(k => String(ex[k] ?? '') !== String(data[k] ?? ''))).length;
+  const changed = plan.upd.filter(({ex, data}) => Object.keys(data).some(k => JSON.stringify(ex[k] ?? '') !== JSON.stringify(data[k] ?? ''))).length;
   modal('Anteprima importazione', `
     <ul class="stack small">
       <li><b>${changed}</b> clienti esistenti da aggiornare (su ${plan.upd.length} riconosciuti dal codice)</li>
       <li><b>${plan.add.length}</b> nuovi clienti da aggiungere</li>
+      ${plan.merged ? `<li><b>${plan.merged}</b> righe dello stesso cliente unite in un'unica scheda (tenute le date più recenti)</li>` : ''}
       <li><b>${plan.dup.length}</b> duplicati saltati (telefono o P.IVA già presenti)${plan.dup.length ? ': ' + esc(plan.dup.slice(0,8).join(', ')) + (plan.dup.length > 8 ? '…' : '') : ''}</li>
       <li><b>${plan.err}</b> righe senza nome, ignorate</li>
+      ${plan.badDates ? `<li>⚠️ <b>${plan.badDates}</b> date non riconosciute (lasciate vuote)</li>` : ''}
+      ${plan.noGeo ? `<li>📍 <b>${plan.noGeo}</b> clienti di comuni che il gestionale non conosce: per ora senza posizione sulla mappa di Pianifica giri</li>` : ''}
+      ${plan.extraCols.length ? `<li>Colonne conservate nella scheda del cliente: ${esc(plan.extraCols.join(', '))}</li>` : ''}
     </ul>
-    <p class="muted small">I campi vuoti nel file sostituiscono i valori attuali dei clienti aggiornati. Controlla il file prima di confermare.</p>`,
+    <p class="muted small">Per i clienti già presenti si aggiornano solo le colonne presenti nel file. Le posizioni sulla mappa sono indicative (centro del comune). Controlla il file prima di confermare.</p>`,
     `<button class="ghost" onclick="pendingPlan=null;closeModal()">Annulla</button><button onclick="applyImport()">Conferma importazione</button>`);
 }
 function applyImport(){
@@ -2757,16 +2831,21 @@ function applyImport(){
   let upd = 0;
   plan.upd.forEach(({ex, data}) => {
     const before = JSON.stringify(ex);
-    Object.assign(ex, data);
+    const {extra, ...rest} = data;
+    Object.assign(ex, rest);
+    if (extra) ex.extra = {...(ex.extra || {}), ...extra};
     if (data.whatsappOk && !ex.consentDate) ex.consentDate = ymd(new Date());
     if (JSON.stringify(ex) !== before) upd++;
   });
   let n = maxCode();
   plan.add.forEach(d => {
     n++;
-    db.clients.push({id:'c' + uid(), codice:'C' + pad(n, 5), ...d, consentDate: d.whatsappOk ? ymd(new Date()) : ''});
+    const geo = geoGuess(d.city);
+    db.clients.push({id:'c' + uid(), codice:'C' + pad(n, 5), type:'privato', phone:'', email:'', address:'', cap:'', city:'', zona:'', prov:'',
+      vat:'', sdi:'', pec:'', monthly:false, whatsappOk:false, notes:'', tipoIntervento:'', ultimoCambio:'', prossimoCambio:'',
+      ...d, ...(geo ? {lat: geo.lat, lng: geo.lng, geoApprox: true} : {}), consentDate: d.whatsappOk ? ymd(new Date()) : ''});
   });
-  logAct(`Import clienti: ${upd} aggiornati, ${plan.add.length} nuovi, ${plan.dup.length} duplicati saltati`);
+  logAct(`Import clienti: ${upd} aggiornati, ${plan.add.length} nuovi${plan.merged ? ', ' + plan.merged + ' righe unite' : ''}, ${plan.dup.length} duplicati saltati`);
   pendingPlan = null;
   closeModal();
   commit();
