@@ -335,7 +335,7 @@ const SECTIONS = [
   {id:'automazioni', t:'Automazioni', roles:['admin'], d:'Regole che lavorano da sole (scarichi, fatture, visite, promemoria, scorte, scadenze). Puoi attivarle o disattivarle e leggere il registro.'},
   {id:'dati', t:'Dati e fogli', roles:['admin'], d:'Esporta ed importa clienti e magazzino in Excel o Google Sheets, con riconoscimento dei duplicati. Backup completo dei dati.'},
   {id:'qr', t:'QR code', roles:['admin'], d:'Genera il QR code del sito da stampare su biglietti, vetrina o furgone.'},
-  {id:'richieste', t:'Le tue richieste', roles:['admin','tecnico'], d:'Le modifiche chieste al gestionale e il loro stato, con la risposta di chi le ha realizzate. Per chiederne una nuova usa il pulsante giallo "Chiedi una modifica", da qualsiasi pagina.'},
+  {id:'richieste', t:'Le tue richieste', roles:['admin'], d:'Le modifiche chieste al gestionale e il loro stato, con la risposta di chi le ha realizzate. Per chiederne una nuova usa il pulsante giallo "Chiedi una modifica", da qualsiasi pagina.'},
   {id:'impost', t:'Impostazioni', roles:['admin'], d:'Dati azienda, IVA, servizi e prezzi, modelli di messaggio, utenti e ruoli.'}
 ];
 const RULES = [
@@ -940,6 +940,8 @@ function renderShell(){
   const chi = nomeAccesso();
   $('#who').innerHTML = `<span class="who-ic">👤</span><b>${esc(chi)}</b>${isAdmin() ? '' : '<br><small>Tecnico</small>'}`;
   $('#who-m').textContent = '👤 ' + chi;
+  // "Chiedi una modifica" serve solo all'amministrazione
+  $('#req-fab').style.display = isAdmin() ? '' : 'none';
   const secs = SECTIONS.filter(s => s.roles.includes(me.role));
   if (!secs.some(s => s.id === view)) view = secs[0].id;
   $('#nav').innerHTML = secs.map(s => `<button data-v="${s.id}" onclick="go('${s.id}')"><span class="ic">${ICONS[s.id]}</span><span class="lbl">${s.t}</span></button>`).join('');
@@ -3316,6 +3318,7 @@ const RICHIESTE = [
 ];
 const REQ_STATI = {ricevuta:['Ricevuta',''], lavorazione:['In lavorazione','in_corso'], fatta:['Fatta','completato'], chiarire:['Da chiarire','annullato']};
 function reqForm(){
+  if (!me || !isAdmin()) return;
   const sec = SECTIONS.find(x => x.id === view);
   modal('✏️ Chiedi una modifica', `
     <p class="muted small" style="margin-top:0">Scrivi con parole tue cosa vorresti cambiare o aggiungere. La richiesta arriva direttamente a chi sviluppa il gestionale e trovi la risposta in "Le tue richieste".</p>
