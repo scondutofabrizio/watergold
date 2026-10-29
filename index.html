@@ -1178,7 +1178,7 @@ function viewAgenda(){
     ${techs.map(t => {
       const list = apps.filter(a => a.techId === t.id).sort(byTime);
       return `<div class="col">
-        <div class="colh" style="border-color:${t.color}"><b>${esc(t.name)}</b><span class="muted">${list.length} interventi${isAdmin() && list.length ? ` <button class="ghost sm" onclick="listaAgenda('${t.id}')" title="Lista del giorno di ${esc(t.name)} in PDF">📄 Lista PDF</button>` : ''}</span></div>
+        <div class="colh" style="border-color:${t.color}"><b>${esc(t.name)}</b><span class="muted">${list.length} interventi${isAdmin() && list.length ? ` <button class="ghost sm" onclick="listaAgenda('${t.id}')" title="Lista del giorno di ${esc(t.name)} in PDF">📄 Lista PDF</button> <button class="ghost sm" onclick="giroWaAgenda('${t.id}')" title="Invia a ${esc(t.name)} il giro e il percorso Google Maps">🟢 WhatsApp</button>` : ''}</span></div>
         ${list.map(apptCard).join('') || '<p class="muted empty">Nessun intervento</p>'}
       </div>`;
     }).join('')}
@@ -1904,6 +1904,7 @@ function routeCard(di, ri, r){
       ${gmapsLinks(pts).map((u, i, a) => `<a class="btn ghost sm" style="padding:5px 9px;font-size:13px" href="${u}" target="_blank" rel="noopener">🗺️ Google Maps${a.length > 1 ? ` ${i + 1}/${a.length}` : ''}</a>`).join('')}
       <button class="ghost sm" onclick="reoptimize(${di},${ri})">↺ Riottimizza</button>
       <button class="ghost sm" onclick="listaPiano(${di},${ri})" ${info.rows.length ? '' : 'disabled'}>📄 Lista PDF</button>
+      <button class="ghost sm" onclick="giroWaPiano(${di},${ri})" ${info.rows.length ? '' : 'disabled'}>🟢 WhatsApp + Maps</button>
     </div>
     ${info.rows.map((x, i) => `<div class="appt">
       <div class="at"><b>${i + 1}. ${minToT(x.eta)}</b> <span class="muted small">${i === 0 && info.remote ? 'primo cliente' : '+' + fmtKm(x.leg)}</span>
@@ -2306,7 +2307,7 @@ function listaRiga(c, ora, a){
   if (city && addr.toLowerCase().endsWith(', ' + city.toLowerCase())) addr = addr.slice(0, -(city.length + 2));
   const costo = a.importo !== undefined && a.importo !== null && a.importo !== '' ? a.importo : (c.costo ?? '');
   const note = a.notes && !/^(Confermato al telefono|Intervento di PROVA)/.test(a.notes) ? a.notes : '';
-  return {ora, cliente: c.name || '—', tel: c.phone || '', addr, city, costo,
+  return {ora, cliente: c.name || '—', tel: c.phone || '', addr, city, costo, lat: c.lat, lng: c.lng,
     interv: a.intervento || a.service || '', problema: a.problema || '', note};
 }
 // Apre la lista pronta da stampare o salvare in PDF: una pagina per ogni tecnico
@@ -2326,6 +2327,7 @@ function listaPdf(pagine){
       <div class="az"><b>${esc(s.company)}</b><span>${esc(s.address)}</span><span>${[s.vat ? 'P.IVA ' + esc(s.vat) : '', esc((s.site || '').replace(/^https?:\/\//, ''))].filter(Boolean).join(' · ')}</span></div>
       <div class="tit"><small>LISTA INTERVENTI</small><b>${esc(p.tech.toUpperCase())}</b><span>${esc(fmtLong(p.day))}</span></div>
     </header>
+    ${(() => { const l = mapsGiro(p.rows); return l.length ? `<div class="maps">🗺️ <b>Percorso su Google Maps:</b> ${l.map((u, i) => `<a href="${u}">${l.length > 1 ? (i + 1) + 'ª parte' : 'apri il percorso'}</a>`).join(' · ')}</div>` : ''; })()}
     <table>
       <thead><tr><th class="n">#</th><th class="o">Orario</th><th>Cliente</th><th>Telefono</th><th>Indirizzo</th><th>Città</th><th class="c">Costo</th><th class="iv">Intervento programmato</th><th class="es">Intervento eseguito</th></tr></thead>
       <tbody>${p.rows.map((r, i) => `<tr>
@@ -2373,6 +2375,7 @@ function listaPdf(pagine){
     .c{width:46px;text-align:right;white-space:nowrap;font-weight:700}
     .iv{width:24%}.es{width:17%;border-left:1px dashed #b9c5d1}
     .tel{white-space:nowrap}
+    .maps{font-size:11px;margin:-4px 0 10px;color:#0f2b40}.maps a{color:#0b7bc1;font-weight:700}
     .pb{color:#a52a27;font-weight:600;margin-top:2px}.nt{color:#5a6b7c;font-style:italic;margin-top:2px}
     tfoot td{height:auto;background:#eef3f8;font-weight:700;color:#0f2b40;border-bottom:2px solid #0f2b40}
     .vuota td{height:13mm}
@@ -2402,6 +2405,37 @@ function listaPiano(di, ri){
   const idx = ri === undefined ? d.routes.map((r, i) => i) : [ri];
   listaPdf(idx.map(i => ({tech: tname(d.routes[i].techId), day: d.date, rows: listaDaPiano(di, i)})));
 }
+
+// Percorso Google Maps del tecnico: parte dalla sua posizione, al massimo 9 tappe per link (limite di Google)
+function mapsGiro(rows){
+  const pts = rows.filter(r => r.lat && r.lng).map(r => r.lat.toFixed(5) + ',' + r.lng.toFixed(5));
+  const out = [];
+  for (let i = 0; i < pts.length; i += 9) out.push('https://www.google.com/maps/dir/' + (i ? pts[i - 1] : '') + '/' + pts.slice(i, i + 9).join('/'));
+  return out;
+}
+// Numero per WhatsApp: senza prefisso si aggiunge +39
+function waNum(p){
+  let d = digitsOf(p).replace(/^00/, '');
+  if (d.length === 10 && d[0] === '3') d = '39' + d;
+  return d;
+}
+// Messaggio WhatsApp al tecnico: elenco del giro e percorso Google Maps
+function giroWa(techId, day, rows){
+  rows = rows || [];
+  if (!rows.length) return alert('Nessun intervento da inviare.');
+  const t = byId(db.users, techId) || {};
+  const links = mapsGiro(rows);
+  const riga = (r, i) => [`*${i + 1}. ${r.ora}* ${r.cliente}`, `📍 ${[r.addr, r.city].filter(Boolean).join(', ')}`, r.tel ? `📞 ${r.tel}` : '',
+    `🛠️ ${r.interv || '—'}${r.problema ? ` · guasto: ${r.problema}` : ''}${r.costo !== '' && r.costo != null ? ` · 💶 ${eur(r.costo)}` : ''}`].filter(Boolean).join('\n');
+  const testo = [`*Giro di ${fmtLong(day)}* · ${rows.length} interventi`, ...rows.map(riga),
+    links.length ? `🗺️ *Percorso su Google Maps*${links.length > 1 ? ` (in ${links.length} parti)` : ''}:\n` + links.map((u, i) => (links.length > 1 ? `${i + 1}ª parte: ` : '') + u).join('\n') : ''
+  ].filter(Boolean).join('\n\n');
+  const num = waNum(t.phone);
+  if (!num) alert(`${t.name || 'Il tecnico'} non ha il numero di telefono (Impostazioni → Utenti): si apre WhatsApp e scegli tu a chi inviarlo.`);
+  openExt(`https://wa.me/${num}?text=${encodeURIComponent(testo)}`);
+}
+const giroWaAgenda = techId => giroWa(techId, ui.agDate, listaDaAgenda(techId, ui.agDate));
+const giroWaPiano = (di, ri) => giroWa(db.plan.days[di].routes[ri].techId, db.plan.days[di].date, listaDaPiano(di, ri));
 
 /* ---------- CLIENTI ---------- */
 function clientList(){
