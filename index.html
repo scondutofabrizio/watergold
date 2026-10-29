@@ -2135,6 +2135,10 @@ function viewGiro(){
   const tid = isAdmin() ? (ui.giroTech || tecnici()[0].id) : me.id;
   if (isAdmin()) ui.giroTech = tid;
   let list = db.appointments.filter(a => a.techId === tid && a.date === ui.giroDate);
+  // i completati spariscono dalla lista; togliendo la spunta si rivedono per riaprirli o modificarli
+  if (ui.giroNascondi === undefined) ui.giroNascondi = true;
+  const nDone = list.filter(a => a.status === 'completato').length;
+  if (ui.giroNascondi) list = list.filter(a => a.status !== 'completato');
   list = ui.giroZona
     ? list.sort((a,b) => cityOf(a).localeCompare(cityOf(b)) || byTime(a,b))
     : list.sort(byTime);
@@ -2146,10 +2150,11 @@ function viewGiro(){
     <input type="date" value="${ui.giroDate}" onchange="ui.giroDate=this.value;render()">
     <button class="ghost sm" onclick="moveDayGiro(1)">▶</button>
     <button class="ghost sm" onclick="ui.giroZona=!ui.giroZona;render()">${ui.giroZona ? 'Ordine per orario' : 'Ordine per zona'}</button>
+    <label class="chk"><input type="checkbox" ${ui.giroNascondi ? 'checked' : ''} onchange="ui.giroNascondi=this.checked;render()"> Nascondi i completati${nDone ? ` (${nDone})` : ''}</label>
   </div>
-  <p class="muted small">${list.length} interventi · ${fmtDate(ui.giroDate)}</p>
+  <p class="muted small">${list.length} ${ui.giroNascondi ? 'da fare' : 'interventi'} · ${fmtDate(ui.giroDate)}${ui.giroNascondi && nDone ? ` · ${nDone} completati nascosti` : ''}</p>
   ${(() => { const pts = list.filter(a => a.status !== 'annullato').map(a => byId(db.clients, a.clientId)).filter(c => c && c.lat); return pts.length > 1 ? `<div class="actions" style="margin-bottom:12px">${gmapsLinks(pts).map((u, i, arr) => `<a class="btn" href="${u}" target="_blank" rel="noopener">🗺️ Tutto il giro in Google Maps${arr.length > 1 ? ` ${i + 1}/${arr.length}` : ''}</a>`).join('')}</div>` : ''; })()}
-  ${list.map(a => giroCard(a, t)).join('') || '<p class="muted">Nessun intervento per questa giornata.</p>'}`;
+  ${list.map(a => giroCard(a, t)).join('') || `<p class="muted">${ui.giroNascondi && nDone ? '✅ Tutti gli interventi della giornata sono completati.' : 'Nessun intervento per questa giornata.'}</p>`}`;
 }
 function giroCard(a, t){
   const c = byId(db.clients, a.clientId) || {name:'—', address:'', phone:'', city:''};
