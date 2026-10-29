@@ -1304,7 +1304,15 @@ function plCandidates(){
 }
 const anticipo = c => db.plan && c.prossimoCambio > lastDayOf(db.plan.month) ? ' <span class="badge">da anticipare</span>' : '';
 function defaultPl(){
-  return {month: ymd(new Date()).slice(0, 7), arretrati: true, cities: ['Palermo'], date: nextWorkday(ymd(new Date())),
+  // mese corrente; se non ha scadenze si parte dal primo mese che ne ha (entro 3 mesi)
+  let month = ymd(new Date()).slice(0, 7);
+  for (let i = 1; i <= 3 && !daProgrammare(month, true).length; i++) {
+    const m = addMonths(ymd(new Date()).slice(0, 7) + '-01', i).slice(0, 7);
+    if (daProgrammare(m, true).length) month = m;
+  }
+  // Palermo se ha clienti da programmare, altrimenti tutti i comuni che ne hanno
+  const cities = [...new Set(daProgrammare(month, true).map(c => c.city))];
+  return {month, arretrati: true, cities: cities.includes('Palermo') ? ['Palermo'] : cities, date: nextWorkday(ymd(new Date())),
     techs: tecnici().map(t => t.id), perTech: 9, start: '08:30', dur: 30};
 }
 
@@ -1686,7 +1694,7 @@ function viewPianifica(){
         <label class="chk"><input type="checkbox" ${p.arretrati ? 'checked' : ''} onchange="ui.pl.arretrati=this.checked;render()"> Includi gli arretrati dei mesi prima</label>
       </div>
       <div><small class="muted">Comuni (clienti con il cambio filtri da programmare). Tocca per scegliere:</small>
-        <div class="actions" style="margin-top:6px">${cityBtns || '<span class="muted">Nessun cliente da programmare in questo mese.</span>'}</div>
+        <div class="actions" style="margin-top:6px">${cityBtns || '<span class="muted">Nessun cliente da programmare in questo mese: prova a scegliere il mese dopo in "Mese delle scadenze".</span>'}</div>
         <div class="actions" style="margin-top:6px"><button class="ghost sm" onclick="ui.pl.cities=${esc(JSON.stringify(Object.keys(byCity)))};render()">Tutti</button><button class="ghost sm" onclick="ui.pl.cities=[];render()">Nessuno</button></div>
       </div>
       <div class="hint"><b>${sel.length}</b> clienti selezionati${late ? ` · <b>${late}</b> già in ritardo` : ''}</div>
