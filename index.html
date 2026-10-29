@@ -226,6 +226,8 @@ th{font-size:13px;color:var(--muted);font-weight:600}
   .nav::-webkit-scrollbar{display:none}
   .nav button{flex:0 0 auto;min-width:66px;flex-direction:column;justify-content:center;gap:2px;padding:6px 4px;font-size:11px;text-align:center;border-radius:10px;line-height:1.15}
   .nav .ic{width:auto;font-size:20px}
+  .nav.few{justify-content:center;gap:6px}
+  .nav.few button{flex:1 1 0;max-width:120px;font-size:12px}
   main{padding:14px 12px 100px}
   h2{font-size:21px}
   .sec-head .desc{font-size:13px}
@@ -944,6 +946,7 @@ function renderShell(){
   $('#req-fab').style.display = isAdmin() ? '' : 'none';
   const secs = SECTIONS.filter(s => s.roles.includes(me.role));
   if (!secs.some(s => s.id === view)) view = secs[0].id;
+  $('#nav').classList.toggle('few', secs.length <= 5);   // tecnico: poche sezioni, centrate e larghe
   $('#nav').innerHTML = secs.map(s => `<button data-v="${s.id}" onclick="go('${s.id}')"><span class="ic">${ICONS[s.id]}</span><span class="lbl">${s.t}</span></button>`).join('');
   render();
 }
