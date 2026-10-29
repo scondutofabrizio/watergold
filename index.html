@@ -24,7 +24,11 @@ body{margin:0;font-family:system-ui,"Segoe UI",Arial,sans-serif;background:var(-
 .app{display:flex;min-height:100vh}
 .side{width:220px;background:var(--side);color:#fff;padding:18px 12px;flex-shrink:0;display:flex;flex-direction:column;gap:10px}
 .brand{font-weight:700;font-size:20px;margin:0 8px;color:#e3b64b}
-.who{margin:0 8px;font-size:13px;color:#cfe0ef}
+.who{margin:0 8px;font-size:13px;color:#cfe0ef;background:rgba(255,255,255,.08);border-radius:10px;padding:8px 10px}
+.who b{font-size:15px;color:#fff}
+.who-ic{margin-right:6px}
+.who-m{display:none}
+.mhead .who-m{display:block;font-size:13px;font-weight:700;color:#fff;margin:0}
 .nav{display:flex;flex-direction:column;gap:3px}
 .nav button{background:none;color:#cfe0ef;text-align:left;padding:9px 12px;border-radius:8px;font-size:14px}
 .nav button.on,.nav button:hover{background:rgba(255,255,255,.12);color:#fff}
@@ -185,7 +189,10 @@ th{font-size:13px;color:var(--muted);font-weight:600}
 .badge{white-space:nowrap}
 @media (min-width:761px) and (max-width:1024px){
   .side{width:78px;padding:12px 6px;align-items:stretch}
-  .brand,.who,.demo-note,.side .clock,.side .lbl{display:none}
+  .brand,.demo-note,.side .clock,.side .lbl{display:none}
+  .who{margin:0 0 6px;padding:6px 4px;font-size:11px;text-align:center;overflow-wrap:anywhere}
+  .who b{font-size:12px}
+  .who .who-ic,.who small,.who br{display:none}
   .nav button{justify-content:center;padding:10px 4px}
   .nav .ic{width:auto;font-size:18px}
   .side .tbtn{justify-content:center;padding:10px 4px}
@@ -257,7 +264,7 @@ th{font-size:13px;color:var(--muted);font-weight:600}
 <div id="login" class="login" hidden></div>
 <div id="app" class="app" hidden>
   <header class="mhead">
-    <div><span class="brand">Watergold</span><span class="clock"></span></div>
+    <div><span class="brand">Watergold</span><span id="who-m" class="who-m"></span><span class="clock"></span></div>
     <div class="actions" style="width:auto;flex-direction:row">
       <button class="tbtn" onclick="toggleTheme()"><span class="ic">🌓</span></button>
       <button class="tbtn" onclick="logout()"><span class="ic">🚪</span></button>
@@ -910,7 +917,10 @@ const VIEWS = {dash:viewDash, pianifica:viewPianifica, agenda:viewAgenda, giro:v
   promemoria:viewPromemoria, messaggi:viewWa, fatture:viewFatture, report:viewReport, automazioni:viewAuto,
   dati:viewDati, qr:viewQr, richieste:viewRichieste, impost:viewSettings};
 function renderShell(){
-  $('#who').innerHTML = `<b>${esc(me.name)}</b><br>${isAdmin() ? 'Titolare / segreteria' : 'Tecnico'}`;
+  // nel pannello: "Amministratore" per la segreteria, il nome per i tecnici
+  const chi = isAdmin() ? 'Amministratore' : me.name;
+  $('#who').innerHTML = `<span class="who-ic">👤</span><b>${esc(chi)}</b>${isAdmin() ? '' : '<br><small>Tecnico</small>'}`;
+  $('#who-m').textContent = '👤 ' + chi;
   const secs = SECTIONS.filter(s => s.roles.includes(me.role));
   if (!secs.some(s => s.id === view)) view = secs[0].id;
   $('#nav').innerHTML = secs.map(s => `<button data-v="${s.id}" onclick="go('${s.id}')"><span class="ic">${ICONS[s.id]}</span><span class="lbl">${s.t}</span></button>`).join('');
