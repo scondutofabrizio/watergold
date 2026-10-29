@@ -41,7 +41,7 @@ h3{margin:0 0 10px;font-size:17px}
 .desc{margin:0;color:var(--muted);font-size:14px}
 .top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px}
 .actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-button,.btn{background:var(--brand);color:#fff;border:0;border-radius:8px;padding:8px 14px;font-size:14px;cursor:pointer;text-decoration:none;display:inline-block}
+button,.btn{background:var(--btn,var(--brand));color:#fff;border:0;border-radius:8px;padding:8px 14px;font-size:14px;cursor:pointer;text-decoration:none;display:inline-block}
 button:disabled{opacity:.5;cursor:default}
 button.ghost,.btn.ghost{background:#fff;color:var(--text);border:1px solid var(--line)}
 button.danger{background:var(--danger)}
@@ -121,6 +121,9 @@ th{font-size:13px;color:var(--muted);font-weight:600}
 .tt-bar{height:6px;background:var(--soft,#eef2f6);border-radius:99px;margin-top:8px;overflow:hidden}
 .tt-bar i{display:block;height:100%;background:#2e9e5b}
 @media (max-width:520px){.tt-box{flex-direction:column;gap:0;align-items:flex-start}}
+.daynav{display:flex;align-items:center;gap:6px;flex-wrap:nowrap}
+.daynav input{flex:1 1 auto;min-width:0}
+.daynav button{flex:0 0 auto;padding-left:12px;padding-right:12px}
 .ac{position:relative;display:flex;gap:6px}
 .ac input{flex:1}
 .ac-drop{position:absolute;left:0;right:0;top:100%;margin-top:4px;z-index:12;background:var(--card,#fff);border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.18);max-height:280px;overflow:auto}
@@ -169,6 +172,16 @@ th{font-size:13px;color:var(--muted);font-weight:600}
 [data-theme="dark"] .badge.in_corso{background:#4a3a0c;color:#ffd976}
 [data-theme="dark"] .badge.annullato{background:#4a1716;color:#ffaaa7}
 [data-theme="dark"] #modal{background:rgba(0,0,0,.65)}
+/* tema scuro: icone di calendario/orologio e menu chiari, pulsanti blu più scuri (testo bianco leggibile) */
+[data-theme="dark"]{color-scheme:dark;--btn:#1f6fa8}
+[data-theme="dark"] .importo{color:#6fd39a}
+[data-theme="dark"] .guasto{background:#3d1a18;color:#ffb8b3}
+[data-theme="dark"] .badge.annullato{background:#5c1f1d;color:#ffc2bf}
+[data-theme="dark"] .badge.in_corso{background:#5a4510;color:#ffe08a}
+[data-theme="dark"] .ac-drop b{color:var(--text)}
+[data-theme="dark"] .tt-box b{filter:brightness(1.5)}
+[data-theme="dark"] .tt-bar{background:var(--line)}
+[data-theme="dark"] .leaflet-popup-content-wrapper,[data-theme="dark"] .leaflet-popup-tip{color:#1c2633}
 [data-theme="dark"] #modal-box,[data-theme="dark"] #auth-box{background:var(--card)}
 [data-theme="dark"] .mh,[data-theme="dark"] .mf{border-color:var(--line)}
 [data-theme="dark"] .login-box{background:var(--card)}
@@ -260,6 +273,8 @@ th{font-size:13px;color:var(--muted);font-weight:600}
   .giro .links a{text-align:left}
   .card .actions{max-width:100%}
   .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .daynav{width:100%}
+  .actions .daynav input{width:auto}
 }
 </style>
 </head>
@@ -1147,10 +1162,7 @@ function viewAgenda(){
   return `
   <div class="top">
     <div class="actions">
-      <button class="ghost" onclick="moveDay(-1)">◀</button>
-      <input type="date" value="${day}" onchange="ui.agDate=this.value;render()">
-      <button class="ghost" onclick="moveDay(1)">▶</button>
-      <button class="ghost" onclick="ui.agDate=ymd(new Date());render()">Oggi</button>
+      <div class="daynav"><button class="ghost" onclick="moveDay(-1)" title="Giorno prima">◀</button><input type="date" value="${day}" onchange="ui.agDate=this.value;render()"><button class="ghost" onclick="moveDay(1)" title="Giorno dopo">▶</button><button class="ghost" onclick="ui.agDate=ymd(new Date());render()">Oggi</button></div>
       ${isAdmin() ? `<select onchange="ui.agTech=this.value;render()"><option value="all">Tutti i tecnici</option>
         ${tecnici().map(t => `<option value="${t.id}" ${ui.agTech === t.id ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select>` : ''}
     </div>
@@ -2160,9 +2172,7 @@ function viewGiro(){
   return `
   <div class="actions" style="margin-bottom:12px">
     ${isAdmin() ? `<select onchange="ui.giroTech=this.value;render()">${tecnici().map(x => `<option value="${x.id}" ${x.id === tid ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>` : ''}
-    <button class="ghost sm" onclick="moveDayGiro(-1)">◀</button>
-    <input type="date" value="${ui.giroDate}" onchange="ui.giroDate=this.value;render()">
-    <button class="ghost sm" onclick="moveDayGiro(1)">▶</button>
+    <div class="daynav"><button class="ghost" onclick="moveDayGiro(-1)" title="Giorno prima">◀</button><input type="date" value="${ui.giroDate}" onchange="ui.giroDate=this.value;render()"><button class="ghost" onclick="moveDayGiro(1)" title="Giorno dopo">▶</button><button class="ghost" onclick="ui.giroDate=ymd(new Date());render()">Oggi</button></div>
     <button class="ghost sm" onclick="ui.giroZona=!ui.giroZona;render()">${ui.giroZona ? 'Ordine per orario' : 'Ordine per zona'}</button>
     <label class="chk"><input type="checkbox" ${ui.giroNascondi ? 'checked' : ''} onchange="ui.giroNascondi=this.checked;render()"> Nascondi i completati${nDone ? ` (${nDone})` : ''}</label>
   </div>
