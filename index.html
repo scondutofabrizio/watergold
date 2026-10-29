@@ -1081,7 +1081,7 @@ function viewDash(){
     </div>
     <div class="card"><h3>Da fare</h3>
       <ul class="todo">
-        <li><span>${daProg} cambi filtri da programmare (mese e arretrati)</span><button class="ghost sm" onclick="go('pianifica')">Pianifica</button></li>
+        <li><span>${daProg} cambi filtri da programmare (mese e arretrati)</span><button class="ghost sm" onclick="plDaPanoramica()">Pianifica</button></li>
         <li><span>${ord.length ? 'Riordinare ' + ord.length + ' articoli' : 'Nessun articolo da riordinare'}</span><button class="ghost sm" onclick="go('magazzino')">Vai</button></li>
         <li><span>${nf} interventi completati da fatturare</span><button class="ghost sm" onclick="go('fatture')">Vai</button></li>
         <li><span>Promemoria per gli interventi di domani</span><button class="ghost sm" onclick="go('promemoria')">Vai</button></li>
@@ -1205,6 +1205,8 @@ function appForm(pre = {}, id){
       </div>
     </div>`,
     `<button class="ghost" onclick="closeModal()">Annulla</button><button onclick="saveAppt('${id || ''}')">Salva</button>`);
+  // cliente già scelto (es. da "Manutenzioni del mese"): indirizzo, intervento e importo compilati
+  if (!id && pre.clientId) chooseClient(pre.clientId);
 }
 // Cerca il cliente per nome o codice mentre si digita
 // Menu dei clienti del nuovo appuntamento: si apre al tocco, si restringe scrivendo parte di nome, cognome, codice o comune
@@ -1704,8 +1706,16 @@ function monthSummary(p){
       <td data-label="Cliente"><b>${esc(r.c.name)}</b><br><small class="muted">${esc(r.c.phone)}</small></td>
       <td data-label="Indirizzo">${esc(r.c.address)}${r.c.zona && r.c.zona !== r.c.city ? `<br><small class="muted">${esc(r.c.zona)}</small>` : ''}</td>
       <td data-label="Scadenza">${r.c.prossimoCambio ? fmtDate(r.c.prossimoCambio) : '—'}</td>
-      <td data-label="Dettaglio" class="small">${r.a ? `${fmtDate(r.a.date)} ${r.a.time} · ${esc(tname(r.a.techId))}` : r.info ? `${esc(tname(r.info.tech))} · ${CALL[r.info.s.call][0]}` : '—'}</td>
+      <td data-label="Dettaglio" class="small">${r.a ? `${fmtDate(r.a.date)} ${r.a.time} · ${esc(tname(r.a.techId))}` : r.info ? `${esc(tname(r.info.tech))} · ${CALL[r.info.s.call][0]}` : `<button class="sm" onclick="appForm({clientId:'${esc(r.c.id)}', service:FILTRI, date:nextWorkday(ymd(new Date()))})">📅 Metti in agenda</button>`}</td>
     </tr>`).join('') || '<tr><td colspan="5" class="muted">Nessuna manutenzione nel mese.</td></tr>'}</tbody></table></div>`;
+}
+// Dalla Panoramica: elenco del mese aperto, con tutti i comuni che hanno clienti da programmare
+function plDaPanoramica(){
+  ui.pl = defaultPl();
+  ui.pl.month = ymd(new Date()).slice(0, 7);
+  ui.pl.cities = [...new Set(daProgrammare(ui.pl.month, true).map(c => c.city))];
+  ui.plMese = true;
+  go('pianifica');
 }
 function plToggleCity(city){
   const p = ui.pl;
