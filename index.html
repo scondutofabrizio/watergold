@@ -2284,6 +2284,14 @@ function rapporto(id){
 }
 
 /* ---------- LISTA DEL GIORNO PER TECNICO (PDF su carta intestata) ---------- */
+// QR come immagine, per i documenti da stampare (vuoto se la libreria QR non è caricata)
+function qrDataUrl(text){
+  if (typeof QRCode === 'undefined') return '';
+  const box = document.createElement('div');
+  new QRCode(box, {text, width: 300, height: 300, colorDark: '#0f2b40', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M});
+  const cv = box.querySelector('canvas');
+  return cv ? cv.toDataURL('image/png') : '';
+}
 // Logo della carta intestata: quello caricato, altrimenti la goccia Watergold
 function logoHtml(){
   return db.settings.logo ? `<img src="${db.settings.logo}" alt="">`
@@ -2316,6 +2324,9 @@ function listaPdf(pagine){
   if (!pagine.length) return alert('Nessun intervento da mettere in lista.');
   const s = db.settings, w = window.open('', '_blank');
   if (!w) return alert('Consenti le finestre pop-up per esportare la lista.');
+  // QR del sito ufficiale (Impostazioni → Sito web), al posto della firma
+  const sitoTxt = (s.site || '').replace(/^https?:\/\//, '').replace(/\/$/, '');
+  const qrSito = s.site ? qrDataUrl(s.site) : '';
   const eurL = v => v === '' || v === null || v === undefined ? '' : '€ ' + (+v).toLocaleString('it-IT', {minimumFractionDigits: 0, maximumFractionDigits: 2});
   const nomeFile = pagine.length === 1 ? `Lista ${pagine[0].tech} ${fmtDate(pagine[0].day).replaceAll('/', '-')}` : `Liste tecnici ${fmtDate(pagine[0].day).replaceAll('/', '-')}`;
   const pagina = p => {
@@ -2342,7 +2353,7 @@ function listaPdf(pagine){
     <div class="fine">
       <div class="cassa">${['Incasso', 'POS', 'Spese', 'Tot. contanti'].map(x => `<div><small>${x}</small></div>`).join('')}</div>
       <div class="note"><small>Spese e note</small><i></i><i></i><i></i></div>
-      <div class="firma"><small>Firma del tecnico</small></div>
+      ${qrSito ? `<div class="qr"><img src="${qrSito}" alt=""><div><small>Il nostro sito</small><b>${esc(sitoTxt)}</b><span>Inquadra il codice con la fotocamera</span></div></div>` : ''}
     </div>
     <footer>${esc(s.company)} · ${esc(s.address)}${s.site ? ' · ' + esc(s.site.replace(/^https?:\/\//, '')) : ''}</footer>
   </section>`;
@@ -2381,7 +2392,10 @@ function listaPdf(pagine){
     .vuota td{height:13mm}
     .fine{display:grid;grid-template-columns:1.3fr 1fr;gap:10px;margin-top:14px}
     .cassa{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;grid-column:1/-1}
-    .cassa div,.note,.firma{border:1.5px solid #0f2b40;border-radius:8px;min-height:15mm;padding:4px 8px}
+    .cassa div,.note{border:1.5px solid #0f2b40;border-radius:8px;min-height:15mm;padding:4px 8px}
+    .qr{display:flex;align-items:center;gap:10px;border:1.5px solid #e3b64b;border-radius:8px;padding:6px 10px;background:#fffaf0}
+    .qr img{width:26mm;height:26mm;flex:none}
+    .qr div{display:flex;flex-direction:column;gap:2px}.qr b{font-size:13px;color:#0f2b40}.qr span{font-size:9.5px;color:#5a6b7c}
     small{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#5a6b7c;font-weight:700}
     .note i{display:block;border-bottom:1px solid #cfd8e2;height:8mm}
     footer{margin-top:auto;padding-top:10px;border-top:1px solid #e3b64b;font-size:9px;color:#8a99a8;text-align:center}
