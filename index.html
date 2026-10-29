@@ -103,6 +103,18 @@ th{font-size:13px;color:var(--muted);font-weight:600}
 .login-box .brand{color:var(--side);margin:0;font-size:26px}
 .err{color:var(--danger);margin:0}
 .hint{background:#f4f6f9;border-radius:8px;padding:10px;font-size:13px;color:var(--muted)}
+.tt-row{padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.tt-row:last-of-type{border-bottom:0}
+.tt-name{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.tt-name small{margin-left:auto}
+.tt-name .dot{width:12px;height:12px;border-radius:50%;flex:none}
+.tt-boxes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tt-box{border:1px solid;border-left-width:4px;border-radius:8px;padding:6px 10px;display:flex;align-items:baseline;gap:8px}
+.tt-box b{font-size:22px}
+.tt-box span{font-size:13px;color:var(--muted)}
+.tt-bar{height:6px;background:var(--soft,#eef2f6);border-radius:99px;margin-top:8px;overflow:hidden}
+.tt-bar i{display:block;height:100%;background:#2e9e5b}
+@media (max-width:520px){.tt-box{flex-direction:column;gap:0;align-items:flex-start}}
 .ac{position:relative;display:flex;gap:6px}
 .ac input{flex:1}
 .ac-drop{position:absolute;left:0;right:0;top:100%;margin-top:4px;z-index:12;background:var(--card,#fff);border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.18);max-height:280px;overflow:auto}
@@ -1050,6 +1062,24 @@ function setRule(key, v){ db.settings.rules[key] = v; commit(); }
 function runNow(){ runDaily(true); commit(); alert('Automazioni eseguite. Vedi il registro.'); }
 
 /* ---------- PANORAMICA ---------- */
+// Avanzamento del giorno per tecnico: si aggiorna da solo quando i tecnici cambiano lo stato degli interventi
+function techToday(today){
+  const n = (l, st) => l.filter(a => a.status === st).length;
+  const rows = tecnici().map(t => ({t, l: today.filter(a => a.techId === t.id && a.status !== 'annullato')})).filter(r => r.l.length);
+  const tot = today.filter(a => a.status !== 'annullato');
+  const box = (label, v, col) => `<div class="tt-box" style="border-color:${col}"><b style="color:${col}">${v}</b><span>${label}</span></div>`;
+  return `<div class="card"><h3>👷 Interventi di oggi per tecnico</h3>
+    ${rows.map(({t, l}) => {
+      const done = n(l, 'completato'), pct = Math.round(done / l.length * 100);
+      return `<div class="tt-row" onclick="ui.giroTech='${t.id}';ui.giroDate=ymd(new Date());go('giro')" title="Apri il giro di ${esc(t.name)}">
+        <div class="tt-name"><span class="dot" style="background:${t.color}"></span><b>${esc(t.name)}</b><small class="muted">${done} su ${l.length} · ${pct}%</small></div>
+        <div class="tt-boxes">${box('Programmati', n(l, 'programmato'), '#0b7bc1')}${box('In corso', n(l, 'in_corso'), '#b7791f')}${box('Completati', done, '#2e9e5b')}</div>
+        <div class="tt-bar"><i style="width:${pct}%"></i></div>
+      </div>`;
+    }).join('') || '<p class="muted">Nessun intervento assegnato ai tecnici per oggi.</p>'}
+    ${rows.length > 1 ? `<p class="muted small" style="margin:8px 0 0">Totale: ${n(tot, 'programmato')} programmati · ${n(tot, 'in_corso')} in corso · ${n(tot, 'completato')} completati su ${tot.length}</p>` : ''}
+  </div>`;
+}
 function viewDash(){
   const t = ymd(new Date()), ym = t.slice(0,7);
   const today = db.appointments.filter(a => a.date === t);
@@ -1066,6 +1096,7 @@ function viewDash(){
     <h3>${saluto()}, ${esc(me.name.split(' ')[0])}</h3>
     <p>${fmtLong(t)} · ${today.length} interventi oggi · ${ord.length} articoli da riordinare · ${nf} completati da fatturare</p>
   </div>
+  ${techToday(today)}
   <div class="kpis">
     ${kpi('Interventi oggi', today.length)}
     ${kpi('Cambi filtri da programmare', daProg, daProg ? 'warn' : '')}
