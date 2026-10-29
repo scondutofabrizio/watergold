@@ -103,6 +103,12 @@ th{font-size:13px;color:var(--muted);font-weight:600}
 .login-box .brand{color:var(--side);margin:0;font-size:26px}
 .err{color:var(--danger);margin:0}
 .hint{background:#f4f6f9;border-radius:8px;padding:10px;font-size:13px;color:var(--muted)}
+.ac{position:relative;display:flex;gap:6px}
+.ac input{flex:1}
+.ac-drop{position:absolute;left:0;right:0;top:100%;margin-top:4px;z-index:12;background:var(--card,#fff);border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.18);max-height:280px;overflow:auto}
+.ac-drop div{padding:10px 12px;cursor:pointer;border-bottom:1px solid var(--line);font-weight:400}
+.ac-drop div:hover,.ac-drop div.on{background:var(--soft,#f4f6f9)}
+.ac-drop .muted{cursor:default}
 #modal{position:fixed;inset:0;background:rgba(10,20,30,.45);display:none;align-items:center;justify-content:center;padding:16px;z-index:10}
 #modal.open{display:flex}
 #modal-box{background:#fff;border-radius:14px;width:min(680px,100%);max-height:90vh;overflow:auto;box-shadow:0 10px 40px rgba(0,0,0,.25)}
@@ -1182,8 +1188,7 @@ function appForm(pre = {}, id){
       <label>Ora<input type="time" id="f-time" value="${a.time}"></label>
       <label>Durata (minuti)<input type="number" id="f-dur" step="15" value="${a.duration}"></label>
       <label>Tecnico<select id="f-tech">${tecnici().map(t => `<option value="${t.id}" ${t.id === a.techId ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select></label>
-      <label class="full">Cliente<input id="f-client" list="f-client-list" value="${esc(id ? cname(a.clientId) + ' · ' + (byId(db.clients, a.clientId)||{}).codice : '')}" placeholder="Scrivi nome o codice cliente" oninput="pickClient(this.value)"></label>
-      <datalist id="f-client-list" style="display:none"></datalist>
+      <label class="full">Cliente<div class="ac"><input id="f-client" autocomplete="off" value="${esc(id ? cname(a.clientId) + ' · ' + (byId(db.clients, a.clientId)||{}).codice : '')}" placeholder="Scrivi parte del nome, cognome, codice o comune" oninput="pickClient(this.value);clientDrop()" onfocus="clientDrop()" onblur="setTimeout(()=>clientDrop(false),150)" onkeydown="clientKey(event)"><button type="button" class="ghost sm" title="Mostra tutti i clienti" onmousedown="event.preventDefault()" onclick="clientDrop(document.getElementById('f-client-drop').hidden, true)">▾</button><div id="f-client-drop" class="ac-drop" hidden></div></div></label>
       <input type="hidden" id="f-clientid" value="${esc(a.clientId)}">
       <label>Servizio<select id="f-service" onchange="document.getElementById('f-price').value=this.selectedOptions[0].dataset.price;document.getElementById('f-guasto').style.display=this.value===GUASTO?'':'none'">${db.settings.services.map(s => `<option value="${esc(s.name)}" data-price="${s.price}" ${s.name === a.service ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></label>
       <label>Prezzo manodopera (€)<input type="number" step="0.01" id="f-price" value="${a.price}"></label>
@@ -1202,9 +1207,47 @@ function appForm(pre = {}, id){
     `<button class="ghost" onclick="closeModal()">Annulla</button><button onclick="saveAppt('${id || ''}')">Salva</button>`);
 }
 // Cerca il cliente per nome o codice mentre si digita
+// Menu dei clienti del nuovo appuntamento: si apre al tocco, si restringe scrivendo parte di nome, cognome, codice o comune
+function clientDrop(show = true, all = false){
+  const box = document.getElementById('f-client-drop'), inp = document.getElementById('f-client');
+  if (!box) return;
+  if (!show) { box.hidden = true; return; }
+  const q = all ? '' : inp.value.split(' · ')[0];
+  const words = normC(q).split(' ').filter(Boolean);
+  const list = db.clients.filter(c => { const t = normC(`${c.name} ${c.codice || ''} ${c.city || ''} ${c.phone || ''}`); return words.every(w => t.includes(w)); })
+    .sort((a, b) => a.name.localeCompare(b.name, 'it'));
+  const MAX = 80;
+  box.innerHTML = list.slice(0, MAX).map((c, i) => `<div class="${i ? '' : 'on'}" data-id="${esc(c.id)}" onmousedown="event.preventDefault();chooseClient('${esc(c.id)}')"><b>${esc(c.name)}</b> <span class="muted small">${esc(c.codice || '')}${c.city ? ' · ' + esc(c.city) : ''}</span></div>`).join('')
+    + (list.length > MAX ? `<div class="muted small">… altri ${list.length - MAX}: scrivi qualche lettera in più per restringere</div>` : '')
+    + (list.length ? '' : '<div class="muted small">Nessun cliente trovato</div>');
+  box.hidden = false;
+  if (all) inp.focus();
+}
+function clientKey(e){
+  const box = document.getElementById('f-client-drop');
+  if (!box || box.hidden) return;
+  const items = [...box.querySelectorAll('div[data-id]')], i = items.findIndex(x => x.classList.contains('on'));
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    const n = Math.max(0, Math.min(items.length - 1, i + (e.key === 'ArrowDown' ? 1 : -1)));
+    items.forEach((x, k) => x.classList.toggle('on', k === n));
+    if (items[n]) items[n].scrollIntoView({block: 'nearest'});
+  } else if (e.key === 'Enter' && items[i]) { e.preventDefault(); chooseClient(items[i].dataset.id); }
+  else if (e.key === 'Escape') box.hidden = true;
+}
+function chooseClient(id){
+  const c = byId(db.clients, id);
+  if (!c) return;
+  document.getElementById('f-client').value = c.name + (c.codice ? ' · ' + c.codice : '');
+  document.getElementById('f-client-drop').hidden = true;
+  fillClient(c);
+}
 function pickClient(text){
   const q = text.toLowerCase().split(' · ')[0].trim();
-  const hit = db.clients.find(c => c.name.toLowerCase() === q || c.codice.toLowerCase() === q);
+  const hit = db.clients.find(c => c.name.toLowerCase() === q || (c.codice || '').toLowerCase() === q);
+  fillClient(hit);
+}
+function fillClient(hit){
   document.getElementById('f-clientid').value = hit ? hit.id : '';
   if (hit) document.getElementById('f-address').value = hit.address;
   const iv = document.getElementById('f-interv');
