@@ -586,14 +586,178 @@ function upgrade(d){
   return d;
 }
 function load(){
+  if (SERVER) return srvCache() || emptyDb();
   try { const s = localStorage.getItem(KEY); if (s) return upgrade(JSON.parse(s)); } catch(e) {}
   return seed();
 }
 // Chiede al browser di non cancellare i dati salvati (es. Safari dopo giorni di inattività)
 try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch(e) {}
 function save(){
+  if (SERVER) { srvDirty = true; srvSaveCache(); srvSync(); return; }
   try { localStorage.setItem(KEY, JSON.stringify(db)); }
   catch(e) { alert('Memoria del browser piena: esporta un backup dalla sezione Dati e fogli.'); }
+}
+
+/* ---------- SERVER (prova con i dati veri sul PC di Watergold) ---------- */
+// Aperto dal server (server/server.py) il gestionale usa accessi e dati del server, condivisi tra i dispositivi.
+// La demo pubblica non cambia: senza server tutto resta nel browser sotto KEY.
+// Sul dispositivo resta solo una copia per lavorare senza rete, sotto una chiave separata dalla demo.
+const SERVER = !!window.WG_SERVER;
+const SRV_KEY = 'watergold-server-v1';
+const COLLS = ['users','clients','items','appointments','invoices','movements'];
+const SINGLES = ['settings','sentWa','reminders','log','lastDaily','plan','v'];
+let srvV = 0, srvSynced = {}, srvDirty = false, srvBusy = false, srvOnline = true, srvPw = {}, srvRender = false, srvCacheMe = null;
+function emptyDb(){
+  const s = seed().settings;
+  return {v:6, users:[], clients:[], items:[], appointments:[], invoices:[], movements:[], sentWa:{}, reminders:{}, log:[], lastDaily:'', plan:null, settings:s};
+}
+// Dati del server nel formato del gestionale (i campi mancanti prendono i valori predefiniti, mai i dati demo)
+function fromServer(d){
+  const e = emptyDb();
+  Object.keys(d || {}).forEach(k => { if (d[k] !== null && d[k] !== undefined) e[k] = d[k]; });
+  return upgrade(e);
+}
+function srvSnap(d){
+  const s = {};
+  COLLS.forEach(c => (d[c] || []).forEach(r => { s[c + '|' + r.id] = JSON.stringify(r); }));
+  SINGLES.forEach(k => { s['_|' + k] = JSON.stringify(d[k] === undefined ? null : d[k]); });
+  return s;
+}
+function srvSet(raw, v){
+  db = fromServer(raw);
+  // la segreteria invia al server anche i valori predefiniti che lì mancano (es. impostazioni la prima volta)
+  srvSynced = srvSnap(me && me.role === 'admin' ? raw : db);
+  srvV = v;
+}
+function srvCache(){
+  try {
+    const c = JSON.parse(localStorage.getItem(SRV_KEY) || 'null');
+    if (!c) return null;
+    srvSynced = c.synced; srvV = c.v; srvDirty = true; srvCacheMe = c.me;
+    return fromServer(c.db);
+  } catch(e) { return null; }
+}
+function srvSaveCache(){
+  if (!me) return;
+  try { localStorage.setItem(SRV_KEY, JSON.stringify({db, synced: srvSynced, v: srvV, me: me.id})); } catch(e) {}
+}
+async function srvApi(path, body){
+  // con campo debole una richiesta può restare appesa: dopo 30 secondi si considera fallita e si riprova
+  const signal = AbortSignal.timeout ? AbortSignal.timeout(30000) : undefined;
+  const r = await fetch(path, body === undefined ? {credentials:'same-origin', cache:'no-store', signal}
+    : {method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json', 'X-WG':'1'}, body: JSON.stringify(body), signal});
+  if (r.status === 401) { const e = new Error('accesso'); e.auth = true; throw e; }
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.errore || ('errore ' + r.status));
+  return j;
+}
+function srvDiff(){
+  const cambi = [], voci = {}, seen = new Set(), now = {};
+  COLLS.forEach(c => (db[c] || []).forEach(r => {
+    const k = c + '|' + r.id, j = JSON.stringify(r);
+    seen.add(k); now[k] = j;
+    if (srvSynced[k] !== j) cambi.push({c, id: r.id, data: r});
+  }));
+  Object.keys(srvSynced).forEach(k => {
+    const [c, id] = k.split('|');
+    if (c !== '_' && !seen.has(k)) { cambi.push({c, id, data: null}); now[k] = undefined; }
+  });
+  SINGLES.forEach(k => {
+    const j = JSON.stringify(db[k] === undefined ? null : db[k]);
+    now['_|' + k] = j;
+    if (srvSynced['_|' + k] !== j) voci[k] = db[k] === undefined ? null : db[k];
+  });
+  return {cambi, voci, now};
+}
+async function srvSync(){
+  if (!SERVER || !me || srvBusy || !srvDirty) return;
+  srvBusy = true;
+  try {
+    const {cambi, voci, now} = srvDiff();
+    const pw = srvPw;
+    if (!cambi.length && !Object.keys(voci).length && !Object.keys(pw).length) { srvDirty = false; return; }
+    srvDirty = false;
+    const r = await srvApi('/api/sync', {cambi, voci, password: pw});
+    srvPw = {};
+    cambi.forEach(x => { const k = x.c + '|' + x.id; if (now[k] === undefined) delete srvSynced[k]; else srvSynced[k] = now[k]; });
+    Object.keys(voci).forEach(k => { srvSynced['_|' + k] = now['_|' + k]; });
+    if (r.tutto && !srvDirty) { srvSet(r.tutto, r.v); srvRender = true; }
+    if (r.rifiutate && me.role === 'admin') alert(r.rifiutate + ' modifiche non sono state accettate dal server.');
+    srvOnline = true;
+    srvSaveCache();
+  } catch(e) {
+    srvDirty = true;
+    if (e.auth) return srvLost();
+    srvOnline = false;
+  } finally { srvBusy = false; srvStatus(); }
+}
+// Aggiornamenti dagli altri dispositivi (ogni 3 secondi)
+async function srvPoll(){
+  if (!me) return;
+  if (srvDirty) await srvSync();
+  if (srvBusy || srvDirty) return srvStatus();
+  try {
+    const r = await srvApi('/api/changes?since=' + srvV);
+    srvOnline = true;
+    if (srvDirty || srvBusy) return;
+    if (r.tutto) { srvSet(r.tutto, r.v); srvRender = true; }
+    else if (r.cambi) {
+      r.cambi.forEach(x => {
+        const k = x.k ? '_|' + x.k : x.c + '|' + x.id;
+        if (x.k) { db[x.k] = x.data === null && x.k === 'plan' ? null : (x.data ?? db[x.k]); srvSynced[k] = JSON.stringify(x.data); return; }
+        const arr = db[x.c], i = arr.findIndex(o => o.id === x.id);
+        if (x.data === null) { if (i >= 0) arr.splice(i, 1); delete srvSynced[k]; }
+        else { if (i >= 0) arr[i] = x.data; else arr.push(x.data); srvSynced[k] = JSON.stringify(x.data); }
+      });
+      if (r.cambi.length) srvRender = true;
+      srvV = r.v;
+    } else srvV = r.v;
+    if (srvRender) srvSaveCache();
+  } catch(e) {
+    if (e.auth) return srvLost();
+    srvOnline = false;
+  }
+  srvStatus();
+}
+// Ridisegna solo quando nessuno sta scrivendo, così un aggiornamento non cancella un modulo a metà
+function srvStatus(){
+  const el = document.querySelector('.demo-note');
+  if (el) el.textContent = srvOnline ? (srvDirty ? '🟡 Salvataggio in corso…' : '🟢 Collegato: dati condivisi e aggiornati')
+    : '🔴 Senza rete: le modifiche restano sul dispositivo e si inviano appena torna la connessione';
+  if (!srvRender || !me) return;
+  const a = document.activeElement;
+  if ($('#modal').classList.contains('open') || (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))) return;
+  srvRender = false;
+  me = db.users.find(u => u.id === me.id) || me;
+  render();
+}
+function srvLost(){
+  me = null;
+  try { localStorage.removeItem(SRV_KEY); } catch(e) {}
+  showLogin('Accesso scaduto: entra di nuovo.');
+}
+async function srvStart(){
+  try { if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js'); } catch(e) {}
+  try {
+    const {user} = await srvApi('/api/me');
+    if (!user) { try { localStorage.removeItem(SRV_KEY); } catch(e) {} return showLogin(); }
+    me = user;
+    if (srvCacheMe && srvCacheMe !== user.id) { srvSynced = {}; srvDirty = false; }   // copia di un altro utente: non si invia
+    if (srvDirty) await srvSync();   // modifiche fatte senza rete prima di chiudere la pagina
+    const r = await srvApi('/api/data');
+    srvSet(r.db, r.v); srvDirty = false;
+    srvSaveCache();
+  } catch(e) {
+    // senza rete: si riparte dalla copia sul dispositivo, se c'è
+    let c = null;
+    try { c = JSON.parse(localStorage.getItem(SRV_KEY) || 'null'); } catch(x) {}
+    if (e.auth || !c) return showLogin(e.auth ? '' : 'Server non raggiungibile: controlla la connessione (Tailscale attivo).');
+    srvOnline = false;
+    me = db.users.find(u => u.id === c.me) || null;
+    if (!me) return showLogin('Server non raggiungibile.');
+  }
+  enterApp();
+  setInterval(srvPoll, 3000);
 }
 function commit(){ save(); render(); }
 function logAct(text){
@@ -615,33 +779,50 @@ function showLogin(err = ''){
   $('#login').innerHTML = `<div class="login-box">
     <div class="brand">Watergold</div>
     <h2 style="margin:0">Accesso al gestionale</h2>
-    <p class="muted small" style="margin:0">Dati fittizi di dimostrazione.</p>
+    <p class="muted small" style="margin:0">${SERVER ? 'Accesso personale: email e password che ti ha dato la segreteria.' : 'Dati fittizi di dimostrazione.'}</p>
     ${err ? `<p class="err">${esc(err)}</p>` : ''}
     <label>Email<input id="l-email" type="email" autocomplete="username"></label>
     <label>Password<input id="l-pass" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()"></label>
     <button class="big" onclick="login()">Entra</button>
-    <div class="hint"><b>Titolare / segreteria:</b> admin@watergold.demo · admin123<br>
-    <b>Tecnico:</b> salvo@watergold.demo · tecnico123 (anche giuseppe@, antonino@ e francesco@watergold.demo)</div>
+    ${SERVER ? '' : `<div class="hint"><b>Titolare / segreteria:</b> admin@watergold.demo · admin123<br>
+    <b>Tecnico:</b> salvo@watergold.demo · tecnico123 (anche giuseppe@, antonino@ e francesco@watergold.demo)</div>`}
   </div>`;
 }
-function login(){
+async function login(){
   const e = val('l-email').trim().toLowerCase(), p = val('l-pass');
+  if (SERVER) {
+    try { await srvApi('/api/login', {email: e, password: p}); }
+    catch(x) { return showLogin(x.message === 'accesso' ? 'Email o password non corrette.' : x.message === 'Failed to fetch' ? 'Server non raggiungibile.' : x.message); }
+    return location.reload();
+  }
   const u = db.users.find(x => x.email === e && x.pass === hashPw(p));
   if (!u) return showLogin('Email o password non corrette.');
   localStorage.setItem(ME_KEY, u.id);
   boot();
 }
-function logout(){
+async function logout(){
+  if (SERVER) {
+    await srvSync();
+    try { await srvApi('/api/logout', {}); } catch(e) {}
+    try { localStorage.removeItem(SRV_KEY); } catch(e) {}
+    return location.reload();
+  }
   localStorage.removeItem(ME_KEY);
   me = null;
   showLogin();
 }
 function boot(){
+  if (SERVER) return srvStart();
   me = db.users.find(u => u.id === localStorage.getItem(ME_KEY)) || null;
   if (!me) return showLogin();
+  enterApp();
+}
+function enterApp(){
   $('#login').hidden = true;
   $('#app').hidden = false;
-  runDaily(false);
+  if (SERVER) srvStatus();
+  // con il server le automazioni le esegue solo la segreteria (una volta al giorno per tutti)
+  if (!SERVER || isAdmin()) runDaily(false);
   view = isAdmin() ? 'dash' : 'giro';
   renderShell();
 }
@@ -2475,7 +2656,7 @@ function viewDati(){
     <div class="actions">
       <button onclick="exportBackup()">Scarica backup (.json)</button>
       <label class="btn ghost">Ripristina backup<input type="file" accept=".json" hidden onchange="importBackup(this)"></label>
-      <button class="danger" onclick="resetDemo()">Ricarica i dati demo</button>
+      ${SERVER ? '' : '<button class="danger" onclick="resetDemo()">Ricarica i dati demo</button>'}
     </div>
   </div>`;
 }
@@ -2595,6 +2776,7 @@ function importBackup(input){
 }
 function resetDemo(){
   if (!requireAdmin()) return;
+  if (SERVER) return alert('Con i dati veri i dati demo non si possono caricare.');
   if (!confirm('Ricaricare i dati demo? Le modifiche verranno perse.')) return;
   db = seed();
   localStorage.setItem(ME_KEY, db.users[0].id);
@@ -2754,16 +2936,19 @@ function saveUser(id){
   const name = val('u-name').trim(), email = val('u-email').trim().toLowerCase(), role = val('u-role'), pass = val('u-pass');
   if (!name || !email) return alert('Nome ed email sono obbligatori.');
   if (db.users.some(u => u.email === email && u.id !== id)) return alert('Email già usata da un altro utente.');
-  if (!id && pass.length < 6) return alert('La password deve avere almeno 6 caratteri.');
-  if (id && pass && pass.length < 6) return alert('La password deve avere almeno 6 caratteri.');
+  const minPw = SERVER ? 10 : 6;
+  if ((!id || pass) && pass.length < minPw) return alert(`La password deve avere almeno ${minPw} caratteri.`);
   const data = {name, email, role, phone: val('u-phone').trim(), color: val('u-color')};
+  // con il server la password va solo al server, che la conserva cifrata: mai nei dati condivisi
   if (id) {
     const u = byId(db.users, id);
     if (u.role === 'admin' && role !== 'admin' && db.users.filter(x => x.role === 'admin').length < 2) return alert('Deve restare almeno un utente titolare.');
     Object.assign(u, data);
-    if (pass) u.pass = hashPw(pass);
+    if (pass) { if (SERVER) srvPw[id] = pass; else u.pass = hashPw(pass); }
   } else {
-    db.users.push({id:'u' + uid(), ...data, pass:hashPw(pass)});
+    const nid = 'u' + uid();
+    db.users.push(SERVER ? {id: nid, ...data} : {id: nid, ...data, pass:hashPw(pass)});
+    if (SERVER) srvPw[nid] = pass;
   }
   closeModal();
   commit();
