@@ -1171,14 +1171,14 @@ function viewAgenda(){
       ${isAdmin() ? `<select onchange="ui.agTech=this.value;render()"><option value="all">Tutti i tecnici</option>
         ${tecnici().map(t => `<option value="${t.id}" ${ui.agTech === t.id ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select>` : ''}
     </div>
-    ${isAdmin() ? `<div class="actions"><button onclick="appForm({date:'${day}'})">+ Nuovo appuntamento</button><button class="ghost" onclick="appForm({date:'${day}',service:GUASTO})">🔧 Cliente con un guasto</button></div>` : ''}
+    ${isAdmin() ? `<div class="actions"><button onclick="appForm({date:'${day}'})">+ Nuovo appuntamento</button><button class="ghost" onclick="appForm({date:'${day}',service:GUASTO})">🔧 Cliente con un guasto</button><button class="ghost" onclick="listaAgenda()" ${apps.some(a => a.status !== 'annullato') ? '' : 'disabled'}>📄 Esporta liste PDF</button></div>` : ''}
   </div>
   <p class="muted">${fmtLong(day)} · ${apps.length} interventi</p>
   <div class="cols">
     ${techs.map(t => {
       const list = apps.filter(a => a.techId === t.id).sort(byTime);
       return `<div class="col">
-        <div class="colh" style="border-color:${t.color}"><b>${esc(t.name)}</b><span class="muted">${list.length} interventi</span></div>
+        <div class="colh" style="border-color:${t.color}"><b>${esc(t.name)}</b><span class="muted">${list.length} interventi${isAdmin() && list.length ? ` <button class="ghost sm" onclick="listaAgenda('${t.id}')" title="Lista del giorno di ${esc(t.name)} in PDF">📄 Lista PDF</button>` : ''}</span></div>
         ${list.map(apptCard).join('') || '<p class="muted empty">Nessun intervento</p>'}
       </div>`;
     }).join('')}
@@ -1864,6 +1864,7 @@ function planResult(){
     <div class="actions">
       <button onclick="simulateCalls()" ${cnt('da_chiamare') ? '' : 'disabled'}>🎲 Simula tutte le chiamate (demo)</button>
       <button class="ok" onclick="bookConfirmed()" ${cnt('confermato') > 0 ? '' : 'disabled'}>📅 Metti in agenda i confermati</button>
+      <button class="ghost" onclick="listaPiano(${di})">📄 Liste PDF del giorno</button>
       <button class="ghost" onclick="newRoute(${di})">+ Giro vuoto da comporre a mano</button>
       <label class="chk"><input type="checkbox" ${ui.plAuto ? 'checked' : ''} onchange="ui.plAuto=this.checked"> Sostituzione automatica di chi non risponde (altrimenti solo proposta)</label>
     </div>
@@ -1902,6 +1903,7 @@ function routeCard(di, ri, r){
     <div class="actions" style="margin:8px 0">
       ${gmapsLinks(pts).map((u, i, a) => `<a class="btn ghost sm" style="padding:5px 9px;font-size:13px" href="${u}" target="_blank" rel="noopener">🗺️ Google Maps${a.length > 1 ? ` ${i + 1}/${a.length}` : ''}</a>`).join('')}
       <button class="ghost sm" onclick="reoptimize(${di},${ri})">↺ Riottimizza</button>
+      <button class="ghost sm" onclick="listaPiano(${di},${ri})" ${info.rows.length ? '' : 'disabled'}>📄 Lista PDF</button>
     </div>
     ${info.rows.map((x, i) => `<div class="appt">
       <div class="at"><b>${i + 1}. ${minToT(x.eta)}</b> <span class="muted small">${i === 0 && info.remote ? 'primo cliente' : '+' + fmtKm(x.leg)}</span>
@@ -2278,6 +2280,127 @@ function rapporto(id){
     </body></html>`);
   w.document.close();
   setTimeout(() => w.print(), 300);
+}
+
+/* ---------- LISTA DEL GIORNO PER TECNICO (PDF su carta intestata) ---------- */
+// Logo della carta intestata: quello caricato, altrimenti la goccia Watergold
+function logoHtml(){
+  return db.settings.logo ? `<img src="${db.settings.logo}" alt="">`
+    : `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="#e3b64b"/><path d="M50 19 C57.5 35 72.5 50 72.5 60 A22.5 22.5 0 0 1 27.5 60 C27.5 50 42.5 35 50 19Z" fill="#0f2b40"/></svg>`;
+}
+// Righe di un tecnico in un giorno, dagli appuntamenti in agenda
+function listaDaAgenda(techId, day){
+  return db.appointments.filter(a => a.techId === techId && a.date === day && a.status !== 'annullato').sort(byTime)
+    .map(a => listaRiga(byId(db.clients, a.clientId) || {}, a.time, a));
+}
+// Righe di un giro di Pianifica giri: chi è già in agenda con i dati dell'appuntamento, gli altri con orario e dati del piano
+function listaDaPiano(di, ri){
+  return routeInfo(db.plan.days[di].routes[ri]).rows.map(({s, c, eta}) => {
+    const a = s.apptId && byId(db.appointments, s.apptId);
+    return a ? listaRiga(c, a.time, a) : listaRiga(c, minToT(eta), {intervento: s.intervento || (s.tipo === 'installazione' ? 'Installazione depuratore' : c.tipoIntervento), importo: c.costo});
+  });
+}
+function listaRiga(c, ora, a){
+  const city = c.city || '';
+  let addr = (a.address || c.address || '').trim();
+  if (city && addr.toLowerCase().endsWith(', ' + city.toLowerCase())) addr = addr.slice(0, -(city.length + 2));
+  const costo = a.importo !== undefined && a.importo !== null && a.importo !== '' ? a.importo : (c.costo ?? '');
+  const note = a.notes && !/^(Confermato al telefono|Intervento di PROVA)/.test(a.notes) ? a.notes : '';
+  return {ora, cliente: c.name || '—', tel: c.phone || '', addr, city, costo,
+    interv: a.intervento || a.service || '', problema: a.problema || '', note};
+}
+// Apre la lista pronta da stampare o salvare in PDF: una pagina per ogni tecnico
+function listaPdf(pagine){
+  pagine = pagine.filter(p => p.rows.length);
+  if (!pagine.length) return alert('Nessun intervento da mettere in lista.');
+  const s = db.settings, w = window.open('', '_blank');
+  if (!w) return alert('Consenti le finestre pop-up per esportare la lista.');
+  const eurL = v => v === '' || v === null || v === undefined ? '' : '€ ' + (+v).toLocaleString('it-IT', {minimumFractionDigits: 0, maximumFractionDigits: 2});
+  const nomeFile = pagine.length === 1 ? `Lista ${pagine[0].tech} ${fmtDate(pagine[0].day).replaceAll('/', '-')}` : `Liste tecnici ${fmtDate(pagine[0].day).replaceAll('/', '-')}`;
+  const pagina = p => {
+    const conCosto = p.rows.filter(r => r.costo !== '' && r.costo !== null && r.costo !== undefined);
+    const tot = conCosto.length ? conCosto.reduce((t, r) => t + (+r.costo || 0), 0) : '';
+    return `<section class="pg">
+    <header>
+      <div class="logo">${logoHtml()}</div>
+      <div class="az"><b>${esc(s.company)}</b><span>${esc(s.address)}</span><span>${[s.vat ? 'P.IVA ' + esc(s.vat) : '', esc((s.site || '').replace(/^https?:\/\//, ''))].filter(Boolean).join(' · ')}</span></div>
+      <div class="tit"><small>LISTA INTERVENTI</small><b>${esc(p.tech.toUpperCase())}</b><span>${esc(fmtLong(p.day))}</span></div>
+    </header>
+    <table>
+      <thead><tr><th class="n">#</th><th class="o">Orario</th><th>Cliente</th><th>Telefono</th><th>Indirizzo</th><th>Città</th><th class="c">Costo</th><th class="iv">Intervento programmato</th><th class="es">Intervento eseguito</th></tr></thead>
+      <tbody>${p.rows.map((r, i) => `<tr>
+        <td class="n"><i>${i + 1}</i></td><td class="o"><b>${esc(r.ora)}</b></td><td><b>${esc(r.cliente)}</b></td>
+        <td class="tel">${esc(r.tel).replace(/\s*[\/,;]\s*/g, '<br>')}</td><td>${esc(r.addr)}</td><td>${esc(r.city)}</td>
+        <td class="c">${eurL(r.costo)}</td>
+        <td class="iv">${esc(r.interv)}${r.problema ? `<div class="pb">Guasto: ${esc(r.problema)}</div>` : ''}${r.note ? `<div class="nt">${esc(r.note)}</div>` : ''}</td><td class="es"></td></tr>`).join('')}
+        <tr class="vuota"><td class="n"></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      </tbody>
+      <tfoot><tr><td colspan="6">${p.rows.length} interventi</td><td class="c">${eurL(tot)}</td><td colspan="2">totale previsto</td></tr></tfoot>
+    </table>
+    <div class="fine">
+      <div class="cassa">${['Incasso', 'POS', 'Spese', 'Tot. contanti'].map(x => `<div><small>${x}</small></div>`).join('')}</div>
+      <div class="note"><small>Spese e note</small><i></i><i></i><i></i></div>
+      <div class="firma"><small>Firma del tecnico</small></div>
+    </div>
+    <footer>${esc(s.company)} · ${esc(s.address)}${s.site ? ' · ' + esc(s.site.replace(/^https?:\/\//, '')) : ''}</footer>
+  </section>`;
+  };
+  w.document.write(`<!doctype html><html lang="it"><head><meta charset="utf-8"><title>${esc(nomeFile)}</title>
+  <meta name="viewport" content="width=840">
+  <style>
+    @page{size:A4 portrait;margin:10mm}
+    *{box-sizing:border-box}
+    body{font-family:"Segoe UI",Arial,sans-serif;color:#1c2633;margin:0;background:#e9edf2;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .bar{position:sticky;top:0;background:#0f2b40;color:#fff;padding:10px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:14px;z-index:2}
+    .bar button{background:#e3b64b;color:#0f2b40;border:0;border-radius:8px;padding:9px 16px;font-weight:700;font-size:15px;cursor:pointer}
+    .pg{background:#fff;width:210mm;min-height:297mm;margin:14px auto;padding:10mm;box-shadow:0 2px 14px rgba(0,0,0,.15);display:flex;flex-direction:column}
+    header{display:flex;align-items:center;gap:14px;padding-bottom:10px;border-bottom:3px solid #e3b64b;margin-bottom:12px}
+    .logo{width:58px;height:58px;flex:none;display:flex;align-items:center;justify-content:center}
+    .logo img,.logo svg{max-width:100%;max-height:100%}
+    .az{display:flex;flex-direction:column;font-size:10.5px;color:#5a6b7c;line-height:1.4}
+    .az b{font-size:20px;color:#0f2b40;letter-spacing:.5px}
+    .tit{margin-left:auto;text-align:right;display:flex;flex-direction:column;background:#0f2b40;color:#fff;border-radius:8px;padding:8px 14px}
+    .tit small{font-size:9.5px;letter-spacing:2px;color:#e3b64b;font-weight:700}
+    .tit b{font-size:19px;letter-spacing:.5px}
+    .tit span{font-size:12px;text-transform:capitalize}
+    table{width:100%;border-collapse:collapse;font-size:10.5px}
+    th{background:#0f2b40;color:#fff;font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;padding:7px 5px;text-align:left;font-weight:600}
+    td{border-bottom:1px solid #cfd8e2;padding:7px 5px;vertical-align:top;height:13mm;line-height:1.35}
+    tbody tr:nth-child(even) td{background:#f5f8fb}
+    tr{page-break-inside:avoid}
+    .n{width:22px;text-align:center}.n i{font-style:normal;display:inline-block;width:18px;height:18px;line-height:18px;border-radius:50%;background:#e3b64b;color:#0f2b40;font-weight:700;font-size:10px}
+    .o{width:44px;white-space:nowrap}.o b{font-size:12px;color:#0f2b40}
+    .c{width:46px;text-align:right;white-space:nowrap;font-weight:700}
+    .iv{width:24%}.es{width:17%;border-left:1px dashed #b9c5d1}
+    .tel{white-space:nowrap}
+    .pb{color:#a52a27;font-weight:600;margin-top:2px}.nt{color:#5a6b7c;font-style:italic;margin-top:2px}
+    tfoot td{height:auto;background:#eef3f8;font-weight:700;color:#0f2b40;border-bottom:2px solid #0f2b40}
+    .vuota td{height:13mm}
+    .fine{display:grid;grid-template-columns:1.3fr 1fr;gap:10px;margin-top:14px}
+    .cassa{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;grid-column:1/-1}
+    .cassa div,.note,.firma{border:1.5px solid #0f2b40;border-radius:8px;min-height:15mm;padding:4px 8px}
+    small{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#5a6b7c;font-weight:700}
+    .note i{display:block;border-bottom:1px solid #cfd8e2;height:8mm}
+    footer{margin-top:auto;padding-top:10px;border-top:1px solid #e3b64b;font-size:9px;color:#8a99a8;text-align:center}
+    @media print{body{background:#fff}.bar{display:none}.pg{margin:0;box-shadow:none;width:auto;min-height:calc(297mm - 20mm);padding:0;page-break-after:always}.pg:last-child{page-break-after:auto}}
+  </style></head><body>
+  <div class="bar"><button onclick="print()">🖨️ Stampa / Salva PDF</button><span>Nella finestra di stampa scegli <b>"Salva come PDF"</b> e invia il file al tecnico.</span></div>
+  ${pagine.map(pagina).join('')}
+  </body></html>`);
+  w.document.close();
+  setTimeout(() => w.print(), 500);
+}
+// Dall'Agenda: un tecnico, oppure tutti quelli con interventi nel giorno (una pagina ciascuno)
+function listaAgenda(techId){
+  const day = ui.agDate;
+  const techs = techId ? [byId(db.users, techId)] : tecnici();
+  listaPdf(techs.map(t => ({tech: t.name, day, rows: listaDaAgenda(t.id, day)})));
+}
+// Da Pianifica giri: un giro, oppure tutti i giri del giorno scelto
+function listaPiano(di, ri){
+  const d = db.plan.days[di];
+  const idx = ri === undefined ? d.routes.map((r, i) => i) : [ri];
+  listaPdf(idx.map(i => ({tech: tname(d.routes[i].techId), day: d.date, rows: listaDaPiano(di, i)})));
 }
 
 /* ---------- CLIENTI ---------- */
@@ -3160,6 +3283,10 @@ function viewSettings(){
       <label>P.IVA<input id="s-vat" value="${esc(s.vat)}"></label>
       <label>Indirizzo<input id="s-address" value="${esc(s.address)}"></label>
       <label>Sito web<input id="s-site" value="${esc(s.site)}"></label>
+      <div><small class="muted">Logo per la carta intestata (liste dei tecnici)</small>
+        <div class="actions" style="margin-top:6px"><span style="width:48px;height:48px;display:inline-flex">${logoHtml().replace('<img', '<img style="max-width:48px;max-height:48px"')}</span>
+          <label class="btn ghost sm">${s.logo ? 'Cambia logo' : 'Carica il logo'}<input type="file" accept="image/*" hidden onchange="setQrLogo(this)"></label>
+          ${s.logo ? `<button class="ghost sm" onclick="db.settings.logo='';commit()">Togli il logo</button>` : ''}</div></div>
       <label>Regime fiscale<input id="s-regime" value="${esc(s.regime)}"></label>
       <label>Codice SDI<input id="s-sdi" value="${esc(s.sdi)}"></label>
       <label>PEC<input id="s-pec" value="${esc(s.pec)}"></label>
