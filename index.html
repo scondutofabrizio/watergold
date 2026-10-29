@@ -822,6 +822,7 @@ function logAct(text){
 /* ---------- ACCESSO E RUOLI ---------- */
 const isAdmin = () => !!me && me.role === 'admin';
 const tecnici = () => db.users.filter(u => u.role === 'tecnico');
+const SERVE_TECNICO = 'Prima crea almeno un tecnico: Impostazioni → Utenti → Nuovo utente, ruolo Tecnico.';
 function requireAdmin(){
   if (isAdmin()) return true;
   alert('Operazione riservata alla segreteria.');
@@ -1171,6 +1172,7 @@ function appForm(pre = {}, id){
   if (!requireAdmin()) return;
   pre = pre || {};
   const svc0 = db.settings.services.find(s => s.name === pre.service) || db.settings.services[0];
+  if (!id && !tecnici().length) return alert(SERVE_TECNICO);
   const a = id ? byId(db.appointments, id) : {date:pre.date || ymd(new Date()), time:'09:00', duration:60, clientId:'', techId:tecnici()[0].id, service:svc0.name, price:svc0.price, address:'', notes:'', status:'programmato', materials:[]};
   modal(id ? 'Modifica appuntamento' : 'Nuovo appuntamento', `
     <div class="grid2">
@@ -1835,6 +1837,7 @@ function newRoute(di){
   const day = db.plan.days[di];
   const used = new Set(day.routes.map(r => r.techId));
   const t = tecnici().find(x => !used.has(x.id)) || tecnici()[0];
+  if (!t) return alert(SERVE_TECNICO);
   day.routes.push({techId: t.id, stops: []});
   commit();
 }
@@ -2034,6 +2037,7 @@ function setPlTech(v){ ui.plTech = v; ui.plView = null; render(); }
 
 /* ---------- IL MIO GIRO (mobile) ---------- */
 function viewGiro(){
+  if (isAdmin() && !tecnici().length) return `<div class="card"><p>${SERVE_TECNICO}</p></div>`;
   const tid = isAdmin() ? (ui.giroTech || tecnici()[0].id) : me.id;
   if (isAdmin()) ui.giroTech = tid;
   let list = db.appointments.filter(a => a.techId === tid && a.date === ui.giroDate);
