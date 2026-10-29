@@ -2738,7 +2738,9 @@ function importClients(input){
       if (isX) {
         if (typeof XLSX === 'undefined') throw new Error('libreria Excel non caricata (serve la connessione internet). Usa il CSV.');
         const wb = XLSX.read(reader.result, {type:'array'});   // date come numeri di Excel: le converte parseDataIt
-        rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, defval:''});
+        // con più fogli si usa il primo che ha la colonna del cliente
+        const fogli = wb.SheetNames.map(n => XLSX.utils.sheet_to_json(wb.Sheets[n], {header:1, defval:''}));
+        rows = fogli.find(f => headerRow(f) >= 0) || fogli[0];
       } else rows = parseCsv(reader.result);
     } catch(e) { return alert('Import non riuscito: ' + e.message); }
     planImport(rows);
@@ -2766,13 +2768,19 @@ function parseDataIt(v){
 const parseEuro = v => { const s = String(v ?? '').replace(/[€\s]/g, ''); if (!s) return ''; const n = +(/,\d{1,2}$/.test(s) ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, '')); return isFinite(n) ? round2(n) : ''; };
 // Mesi tra due cambi filtri ricavati dalle date (vicino a 6 → 6, altrimenti 12)
 const mesiTra = (a, b) => { if (!a || !b || b <= a) return 0; const m = (new Date(b) - new Date(a)) / (30.44 * 86400000); return m < 9 ? 6 : 12; };
+const NOMI_COL = ['nome','cliente','ragione_sociale','nome_cliente','nominativo','nome_e_cognome','cognome_e_nome','cognome_nome'];
+// La riga delle intestazioni può non essere la prima (titolo sopra la tabella): si cerca nelle prime 20
+const headerRow = rows => rows.slice(0, 20).findIndex(r => (r || []).some(x => NOMI_COL.includes(normH(x))));
 function planImport(rows){
+  const h = headerRow(rows);
+  if (h > 0) rows = rows.slice(h);
+  rows = rows.filter((r, i) => i === 0 || (r || []).some(x => String(x ?? '').trim() !== ''));   // righe vuote in fondo alla tabella
   if (rows.length < 2) return alert('Il file è vuoto o non contiene righe di dati.');
   const H = rows[0].map(normH);
   const used = new Set();
   const col = (...names) => { for (const n of names) { const i = H.indexOf(n); if (i >= 0) { used.add(i); return i; } } return -1; };
   const ix = {codice:col('codice','codice_cliente','id'),
-    name:col('nome','cliente','ragione_sociale','nome_cliente','nominativo','nome_e_cognome','cognome_e_nome','cognome_nome'), type:col('tipo','tipo_cliente'),
+    name:col(...NOMI_COL), type:col('tipo','tipo_cliente'),
     phone:col('telefono','cellulare','tel','cell','recapito','telefono_cellulare','numero'), email:col('email','mail','e_mail'),
     address:col('indirizzo','via','indirizzo_impianto'), cap:col('cap'), city:col('citta','comune','localita','paese'),
     zona:col('zona','quartiere'), prov:col('provincia','prov'),
