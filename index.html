@@ -3000,8 +3000,8 @@ function viewDati(){
         <button onclick="exportClients('csv')">Clienti CSV (per Google Sheets)</button>
         <button class="ghost" onclick="exportClients('xlsx')">Clienti Excel (.xlsx)</button>
       </div>
-      <div class="actions" style="margin-top:10px"><label class="btn">Importa clienti (CSV o Excel)<input type="file" accept=".csv,.xlsx,.xls" hidden onchange="importClients(this)"></label></div>
-      <p class="muted small">Google Sheets: File → Importa → Carica il CSV, separatore punto e virgola.</p>
+      <div class="actions" style="margin-top:10px"><label class="btn">Importa clienti (Excel, CSV o PDF)<input type="file" accept=".csv,.xlsx,.xls,.pdf" hidden onchange="importClients(this)"></label></div>
+      <p class="muted small">Google Sheets: File → Importa → Carica il CSV, separatore punto e virgola.<br>PDF: va bene un elenco a tabella con le intestazioni (Nome/Cliente, Telefono, Indirizzo…) creato da Excel o da un programma; una scansione o una foto non si può leggere.</p>
     </div>
     <div class="card"><h3>Magazzino</h3>
       <p class="muted small">Giacenze e scorte per il foglio di calcolo o per l'ufficio acquisti.</p>
@@ -3033,6 +3033,10 @@ function importClients(input){
   if (!requireAdmin()) return;
   const f = input.files[0];
   if (!f) return;
+  if (/\.pdf$/i.test(f.name)) {
+    input.value = '';
+    return f.arrayBuffer().then(pdfRows).then(planImport).catch(e => alert('Import non riuscito: ' + e.message));
+  }
   const isX = /\.xlsx?$/i.test(f.name);
   const reader = new FileReader();
   reader.onload = () => {
@@ -3050,6 +3054,76 @@ function importClients(input){
   };
   if (isX) reader.readAsArrayBuffer(f); else reader.readAsText(f);
   input.value = '';
+}
+// PDF a tabella → righe come quelle del foglio Excel. La libreria pdf.js si carica solo la prima volta che serve.
+// Le colonne si ricavano dalla riga delle intestazioni (posizione orizzontale di ogni titolo); le intestazioni
+// ripetute in cima a ogni pagina si saltano e le righe spezzate su due linee (indirizzo lungo) si riuniscono.
+const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+function loadPdfJs(){
+  if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  return new Promise((ok, ko) => {
+    const sc = document.createElement('script');
+    sc.src = PDFJS + 'pdf.min.js';
+    sc.onload = () => { pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS + 'pdf.worker.min.js'; ok(pdfjsLib); };
+    sc.onerror = () => ko(new Error('lettore PDF non caricato (serve la connessione internet).'));
+    document.head.appendChild(sc);
+  });
+}
+async function pdfRows(buf){
+  const lib = await loadPdfJs();
+  const pdf = await lib.getDocument({data: new Uint8Array(buf)}).promise;
+  const linee = [];   // {y, items:[{x, x2, s}]} pagina per pagina, dall'alto in basso
+  for (let n = 1; n <= pdf.numPages; n++) {
+    const pg = await pdf.getPage(n);
+    const tc = await pg.getTextContent();
+    const its = tc.items.filter(t => t.str && t.str.trim()).map(t => ({x: t.transform[4], y: t.transform[5], x2: t.transform[4] + t.width, h: Math.abs(t.transform[3]) || 8, s: t.str}));
+    its.sort((a, b) => b.y - a.y || a.x - b.x);
+    const pl = [];
+    for (const t of its) {
+      const l = pl.find(l => Math.abs(l.y - t.y) < Math.max(2, t.h * 0.4));
+      if (l) l.items.push(t); else pl.push({y: t.y, h: t.h, items: [t]});
+    }
+    pl.forEach(l => { l.items.sort((a, b) => a.x - b.x); l.pg = n; });
+    linee.push(...pl);
+  }
+  if (!linee.length) throw new Error('nel PDF non c\'è testo da leggere: probabilmente è una scansione o una foto. Serve il file Excel o un PDF creato dal programma.');
+  // intestazioni: pezzi vicini sulla stessa linea = un solo titolo, salvo che uno dei due sia già un titolo noto (COSTO)
+  const NOTI = new Set([...NOMI_COL, 'codice','tipo','telefono','cellulare','tel','email','indirizzo','via','cap','citta','comune','localita',
+    'zona','provincia','prov','piva','note','intervento','impianto','scadenza','mesi','frequenza','costo','importo','prezzo','canone']);
+  const celle = l => l.items.reduce((acc, t) => {
+    const u = acc[acc.length - 1];
+    if (u && t.x - u.x2 < t.h * 0.35 && !NOTI.has(normH(t.s)) && !NOTI.has(normH(u.s))) { u.s += (t.x - u.x2 > t.h * 0.15 ? ' ' : '') + t.s; u.x2 = t.x2; }
+    else acc.push({x: t.x, x2: t.x2, s: t.s});
+    return acc;
+  }, []);
+  const hi = linee.slice(0, 40).findIndex(l => celle(l).some(c => NOMI_COL.includes(normH(c.s))));
+  if (hi < 0) throw new Error('nel PDF non trovo la riga delle intestazioni con la colonna "Nome" o "Cliente".');
+  const head = celle(linee[hi]).map(c => ({...c, s: c.s.trim()}));
+  const limiti = head.map((c, i) => i ? (head[i - 1].x2 + c.x) / 2 : -Infinity);
+  const colDi = x => { let k = 0; limiti.forEach((b, i) => { if (x >= b - 1) k = i; }); return k; };
+  const chiave = head.map(c => normH(c.s)).join('|');
+  const iNome = head.findIndex(c => NOMI_COL.includes(normH(c.s)));
+  const righe = [];
+  for (const l of linee.slice(hi + 1)) {
+    if (celle(l).map(c => normH(c.s)).join('|') === chiave) continue;   // intestazione ripetuta
+    const cs = l.items;   // nei dati ogni pezzo va nella colonna in cui inizia
+    const r = head.map(() => '');
+    for (const c of cs) { const k = colDi(c.x); r[k] = r[k] ? r[k] + ' ' + c.s.trim() : c.s.trim(); }
+    righe.push({r, y: l.y, h: l.h, pg: l.pg, piene: r.filter(Boolean).length});
+  }
+  // linea senza nome e con poche celle: è il seguito (o l'inizio, con il testo allineato in basso) della riga più vicina
+  const pezzo = x => !x.r[iNome] && x.piene <= Math.max(2, head.length / 3);
+  const vicina = (x, y) => y && y.pg === x.pg && !pezzo(y) && Math.abs(y.y - x.y) < x.h * 2.2 ? Math.abs(y.y - x.y) : Infinity;
+  righe.forEach((x, i) => {
+    if (!pezzo(x)) return;
+    const su = vicina(x, righe[i - 1]), giu = vicina(x, righe[i + 1]);
+    if (su === Infinity && giu === Infinity) return;   // numeri di pagina, piè di pagina
+    const dest = su <= giu ? righe[i - 1] : righe[i + 1];
+    x.r.forEach((v, k) => { if (v) dest.r[k] = !dest.r[k] ? v : su <= giu ? dest.r[k] + ' ' + v : v + ' ' + dest.r[k]; });
+    x.unita = true;
+  });
+  const rows = [head.map(c => c.s)].concat(righe.filter(x => !x.unita && !pezzo(x)).map(x => x.r));
+  return rows;
 }
 // Date dal foglio: numero di Excel, 31/12/2026, 31-12-26, 2026-12-31 o 12/2026 (mese e anno). Vuoto se non riconosciuta.
 function parseDataIt(v){
@@ -3090,8 +3164,8 @@ function planImport(rows){
     vat:col('piva','p_iva','partita_iva','cf','codice_fiscale'), sdi:col('sdi','codice_sdi'),
     pec:col('pec'), monthly:col('mensile','contratto_mensile'), wa:col('consenso_whatsapp','whatsapp'), notes:col('note','annotazioni'),
     interv:col('intervento','tipo_intervento','impianto','tipo_impianto','tipo_di_intervento'),
-    ultimo:col('ultima_manutenzione','ultimo_cambio','ultimo_cambio_filtri','data_ultima_manutenzione','ultimo_intervento'),
-    prossimo:col('manutenzione_programmata','prossimo_cambio','prossima_manutenzione','scadenza','prossimo_intervento','data_programmata'),
+    ultimo:col('ultima_manutenzione','ultima_manut','ultimo_cambio','ultimo_cambio_filtri','data_ultima_manutenzione','ultimo_intervento'),
+    prossimo:col('manutenzione_programmata','manut_programmata','prossima_manut','prossimo_cambio','prossima_manutenzione','scadenza','prossimo_intervento','data_programmata'),
     mesi:col('filtri_ogni_mesi','mesi','frequenza','periodicita','frequenza_mesi'), costo:col('costo','importo','prezzo','canone','costo_intervento')};
   if (ix.name < 0) return alert('Colonna "nome" o "cliente" non trovata. Intestazioni lette: ' + H.join(', '));
   // le colonne che il gestionale non conosce non si perdono: restano nella scheda del cliente ("Altri dati dal file")
