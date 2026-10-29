@@ -648,8 +648,31 @@ async function srvApi(path, body){
     : {method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json', 'X-WG':'1'}, body: JSON.stringify(body), signal});
   if (r.status === 401) { const e = new Error('accesso'); e.auth = true; throw e; }
   const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(j.errore || ('errore ' + r.status));
+  if (!r.ok) { const e = new Error(j.errore || ('errore ' + r.status)); e.attesa = !!j.attesa; throw e; }
   return j;
+}
+// Accesso: da un dispositivo nuovo si aspetta che Fabrizio lo approvi (riceve un avviso su Telegram);
+// intanto la pagina riprova da sola ogni 5 secondi, per 30 minuti
+let srvWait = null;
+async function srvLogin(e, p, t0 = Date.now()){
+  clearTimeout(srvWait);
+  try { await srvApi('/api/login', {email: e, password: p}); }
+  catch(x) {
+    if (x.attesa && Date.now() - t0 < 30 * 60000) {
+      $('#login').innerHTML = `<div class="login-box">
+        <div class="brand">Watergold</div>
+        <h2 style="margin:0">⏳ In attesa di approvazione</h2>
+        <p>È la prima volta che entri da questo dispositivo: per sicurezza va approvato dall'amministratore, che ha ricevuto un avviso.</p>
+        <p class="muted small">Tieni aperta questa pagina: entra da sola appena il dispositivo è approvato.</p>
+        <button class="ghost" onclick="clearTimeout(srvWait);showLogin()">Annulla</button>
+      </div>`;
+      srvWait = setTimeout(() => srvLogin(e, p, t0), 5000);
+      return;
+    }
+    return showLogin(x.message === 'accesso' ? 'Email o password non corrette.' : x.message === 'Failed to fetch' ? 'Server non raggiungibile.'
+      : x.attesa ? 'Il dispositivo non è ancora stato approvato: riprova più tardi.' : x.message);
+  }
+  location.reload();
 }
 function srvDiff(){
   const cambi = [], voci = {}, seen = new Set(), now = {};
@@ -790,11 +813,7 @@ function showLogin(err = ''){
 }
 async function login(){
   const e = val('l-email').trim().toLowerCase(), p = val('l-pass');
-  if (SERVER) {
-    try { await srvApi('/api/login', {email: e, password: p}); }
-    catch(x) { return showLogin(x.message === 'accesso' ? 'Email o password non corrette.' : x.message === 'Failed to fetch' ? 'Server non raggiungibile.' : x.message); }
-    return location.reload();
-  }
+  if (SERVER) return srvLogin(e, p);
   const u = db.users.find(x => x.email === e && x.pass === hashPw(p));
   if (!u) return showLogin('Email o password non corrette.');
   localStorage.setItem(ME_KEY, u.id);
