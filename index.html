@@ -919,9 +919,10 @@ let pendingPlan = null;
 const VIEWS = {dash:viewDash, pianifica:viewPianifica, agenda:viewAgenda, giro:viewGiro, clienti:viewClienti, magazzino:viewMagazzino,
   promemoria:viewPromemoria, messaggi:viewWa, fatture:viewFatture, report:viewReport, automazioni:viewAuto,
   dati:viewDati, qr:viewQr, richieste:viewRichieste, impost:viewSettings};
+// Nome di chi è collegato, nel pannello e nel saluto: "Amministratore" per la segreteria, il nome per i tecnici
+const nomeAccesso = () => isAdmin() ? 'Amministratore' : me.name;
 function renderShell(){
-  // nel pannello: "Amministratore" per la segreteria, il nome per i tecnici
-  const chi = isAdmin() ? 'Amministratore' : me.name;
+  const chi = nomeAccesso();
   $('#who').innerHTML = `<span class="who-ic">👤</span><b>${esc(chi)}</b>${isAdmin() ? '' : '<br><small>Tecnico</small>'}`;
   $('#who-m').textContent = '👤 ' + chi;
   const secs = SECTIONS.filter(s => s.roles.includes(me.role));
@@ -1106,7 +1107,7 @@ function viewDash(){
   const upcoming = db.appointments.filter(a => a.date >= t && (a.status === 'programmato' || a.status === 'in_corso')).sort(byDateTime).slice(0,6);
   return `
   <div class="greet">
-    <h3>${saluto()}, ${esc(me.name.split(' ')[0])}</h3>
+    <h3>${saluto()}, ${esc(nomeAccesso())}</h3>
     <p>${fmtLong(t)} · ${today.length} interventi oggi · ${ord.length} articoli da riordinare · ${nf} completati da fatturare</p>
   </div>
   ${techToday(today)}
@@ -1556,7 +1557,7 @@ function setCall(di, ri, cid, v){
   commit();
 }
 function confirmMsg(c, day, eta){
-  return db.settings.confirmTpl.replaceAll('{nome}', c.name).replaceAll('{operatore}', me.name.split(' ')[0])
+  return db.settings.confirmTpl.replaceAll('{nome}', c.name).replaceAll('{operatore}', isAdmin() ? 'la segreteria' : me.name.split(' ')[0])
     .replaceAll('{data}', fmtDate(day.date)).replaceAll('{ora}', minToT(eta));
 }
 function callForm(di, ri, cid){
@@ -3312,7 +3313,7 @@ function reqForm(){
       <label>Dove (sezione)<select id="rq-sec">${SECTIONS.filter(x => x.id !== 'richieste').map(x => `<option ${sec && x.id === sec.id ? 'selected' : ''}>${esc(x.t)}</option>`).join('')}<option>Altro / tutto il gestionale</option></select></label>
       <label>Cosa vorresti<textarea id="rq-txt" rows="5" placeholder="Es. Nella mappa vorrei vedere anche il numero di telefono del cliente"></textarea></label>
       <p class="muted small" style="margin:0">🔒 Per indicare un cliente usa il suo codice (es. C00553), non nome, indirizzo o telefono.</p>
-      <label>Il tuo nome (facoltativo)<input id="rq-nome" value="${esc(me ? me.name : '')}"></label>
+      <label>Il tuo nome (facoltativo)<input id="rq-nome" value="${esc(me ? nomeAccesso() : '')}"></label>
     </div>`,
     `<button class="ghost" onclick="closeModal()">Annulla</button><button onclick="sendReq()">Invia richiesta</button>`);
   setTimeout(() => { const t = document.getElementById('rq-txt'); if (t) t.focus(); }, 0);
