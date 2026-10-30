@@ -1306,7 +1306,7 @@ function appForm(pre = {}, id){
       <input type="hidden" id="f-clientid" value="${esc(a.clientId)}">
       <label>Servizio<select id="f-service" onchange="document.getElementById('f-price').value=this.selectedOptions[0].dataset.price;document.getElementById('f-guasto').style.display=this.value===GUASTO?'':'none'">${db.settings.services.map(s => `<option value="${esc(s.name)}" data-price="${s.price}" ${s.name === a.service ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></label>
       <label>Prezzo manodopera (€)<input type="number" step="0.01" id="f-price" value="${a.price}"></label>
-      <label class="full">💶 Importo che il cliente dovrà pagare (€) <small class="muted">IVA inclusa · lo vede il tecnico e va in fattura al posto di manodopera e materiali</small><input type="number" step="0.01" min="0" id="f-importo" value="${a.importo ?? ''}" placeholder="Scrivi l'importo da incassare"></label>
+      <label class="full">💶 Importo che il cliente dovrà pagare (€) <small class="muted">libero, IVA inclusa · scrivi 0 se non c'è niente da incassare · lo vede il tecnico e va in fattura al posto di manodopera e materiali</small><input type="number" step="0.01" min="0" id="f-importo" value="${a.importo ?? ''}" placeholder="Scrivi l'importo da incassare"></label>
       <label class="full" id="f-guasto" style="${a.service === GUASTO ? '' : 'display:none'}">🔧 Problema segnalato dal cliente (lo legge il tecnico prima di partire)<textarea id="f-problema" rows="3" placeholder="Es. perde acqua sotto il lavello, il rubinetto non eroga, spia rossa accesa…">${esc(a.problema || '')}</textarea></label>
       <label class="full">Tipo di intervento / impianto (cosa deve fare il tecnico)<input id="f-interv" list="tipi-list" value="${esc(a.intervento || '')}" placeholder="Scegli dall'elenco o scrivi"></label>
       ${tipiList()}
@@ -1367,7 +1367,7 @@ function fillClient(hit){
   document.getElementById('f-clientid').value = hit ? hit.id : '';
   if (hit) document.getElementById('f-address').value = hit.address;
   const iv = document.getElementById('f-interv');
-  if (hit && iv && !iv.value && hit.tipoIntervento) iv.value = hit.tipoIntervento;
+  if (hit && iv && !iv.value && (interventiCliente(hit).length || hit.tipoIntervento)) iv.value = interventiCliente(hit).join(' + ') || hit.tipoIntervento;
   const imp = document.getElementById('f-importo');
   if (hit && imp && imp.value === '' && hit.costo !== undefined && hit.costo !== '') imp.value = hit.costo;
 }
@@ -1378,7 +1378,7 @@ function tipiList(){
 // Tipo di intervento e problema del guasto, ben visibili per il tecnico
 function intervHtml(a){
   return (a.intervento ? `<div class="interv">🛠️ ${esc(a.intervento)}</div>` : '')
-    + (a.importo != null && a.importo !== '' ? `<div class="importo">💶 Da pagare: ${eur(a.importo)}</div>` : '')
+    + importoHtml(a.importo)
     + (a.problema ? `<div class="guasto"><b>Problema segnalato:</b> ${esc(a.problema)}</div>` : '');
 }
 function saveAppt(id){
@@ -1437,6 +1437,9 @@ const hav = (a, b) => {
 };
 const roadKm = (a, b) => hav(a, b) * 1.35;
 const driveMin = km => km <= 4 ? km / 20 * 60 : 12 + (km - 4) / 55 * 60;
+// Minuti di strada stimati (città lenta, extraurbano più veloce): per decidere gli orari degli appuntamenti
+const fmtDur = m => { m = Math.max(1, Math.round(m)); return m < 60 ? m + ' min' : Math.floor(m / 60) + ' h' + (m % 60 ? ' ' + (m % 60) + ' min' : ''); };
+const fmtViaggio = km => fmtKm(km) + ' · ~' + fmtDur(driveMin(km));
 const fmtKm = km => km < 1 ? Math.max(50, Math.round(km * 20) * 50) + ' m' : km.toFixed(1).replace('.', ',') + ' km';
 const minToT = m => { const r = Math.round(m); return pad(Math.floor(r / 60)) + ':' + pad(r % 60); };
 const nextWorkday = s => { const d = new Date(s + 'T12:00:00'); do d.setDate(d.getDate() + 1); while (d.getDay() === 0 || d.getDay() === 6); return ymd(d); };
@@ -1537,7 +1540,7 @@ function routeStart(r){
 const stopDur = s => s.tipo === 'installazione' ? 90 : +db.plan.dur;
 function routeInfo(r){
   const p = db.plan, st = routeStart(r);
-  let t = toMin(p.start), km = 0, prev = st, remote = false;
+  let t = toMin(p.start), km = 0, guida = 0, prev = st, remote = false;
   const rows = r.stops.filter(s => !isOut(s)).map((s, i) => {
     const c = byId(db.clients, s.cid);
     let leg = prev ? roadKm(prev, c) : 0;
@@ -1545,12 +1548,13 @@ function routeInfo(r){
     if (i === 0 && prev && (!r.start || r.start === 'sede') && leg > 30) { remote = true; leg = 0; }
     t = Math.ceil((t + driveMin(leg)) / 5) * 5;
     km += leg;
+    guida += leg ? driveMin(leg) : 0;
     const row = {s, c, leg, eta: t};
     t += stopDur(s);
     prev = c;
     return row;
   });
-  return {rows, km, end: t, remote, start: remote ? null : st};
+  return {rows, km, guida, end: t, remote, start: remote ? null : st};
 }
 function setRouteStart(di, ri, v){
   const r = db.plan.days[di].routes[ri];
@@ -1681,7 +1685,7 @@ function bookConfirmed(){
     if (s.call !== 'confermato' || s.apptId) return;
     const isI = s.tipo === 'installazione';
     const a = {id: uid(), date: d.date, time: minToT(eta), duration: stopDur(s), clientId: c.id, techId: r.techId, service: isI ? inst.name : FILTRI, price: isI ? inst.price : svc.price,
-      address: c.address, intervento: s.intervento || (isI ? '' : c.tipoIntervento || ''), problema: '', importo: isI ? '' : (c.costo ?? ''), notes: isI ? 'Nuovo cliente · installazione confermata al telefono' : 'Confermato al telefono · giro pianificato automaticamente', status: 'programmato',
+      address: c.address, intervento: stopInterv(s, c), problema: '', importo: stopImporto(s, c), notes: isI ? 'Nuovo cliente · installazione confermata al telefono' : 'Confermato al telefono · giro pianificato automaticamente', status: 'programmato',
       materials: isI ? [] : kit.filter(m => byId(db.items, m.itemId)).map(m => ({...m})), stockApplied: false};
     db.appointments.push(a);
     s.apptId = a.id;
@@ -1720,7 +1724,7 @@ function nearForm(di, ri, cid){
   const c = byId(db.clients, cid);
   const list = plCandidates().map(x => ({x, d: roadKm(c, x)})).sort((a, b) => a.d - b.d).slice(0, 8);
   modal(`Clienti più vicini a ${esc(c.name)}`, `<p class="muted small">${esc(c.address)} · clienti delle zone scelte con il cambio filtri da programmare (o del mese dopo, da anticipare) non ancora nel piano.</p>
-    ${list.map(({x, d}) => `<div class="rowline"><b>${fmtKm(d)}</b> · ${esc(x.name)}${anticipo(x)}<br><small class="muted">${esc(x.address)} · scadenza ${fmtDate(x.prossimoCambio)}</small>
+    ${list.map(({x, d}) => `<div class="rowline"><b>${fmtViaggio(d)}</b> · ${esc(x.name)}${anticipo(x)}<br><small class="muted">${esc(x.address)} · scadenza ${fmtDate(x.prossimoCambio)}</small>
       <div class="row-acts"><button class="sm" onclick="addAfter(${di},${ri},'${cid}','${x.id}')">Aggiungi dopo questa tappa</button></div></div>`).join('') || '<p class="muted">Nessun cliente libero nelle zone scelte.</p>'}`,
     `<button class="ghost" onclick="closeModal()">Chiudi</button>`);
 }
@@ -1951,7 +1955,7 @@ function routeCard(di, ri, r){
         <option value="primo" ${r.start === 'primo' ? 'selected' : ''}>📍 Dal primo cliente</option>
         <optgroup label="Da un comune">${towns.map(x => `<option value="${esc(x)}" ${r.start === x ? 'selected' : ''}>${esc(x)}</option>`).join('')}</optgroup>
       </select></label>
-    <div class="muted small">${info.rows.length} interventi · ${fmtKm(info.km)} · ${db.plan.start}–${minToT(info.end)}${info.remote ? ' · zona lontana: orari dal primo cliente' : ''}${info.start && info.start.label && info.start !== db.settings.depot ? ' · parte da ' + esc(info.start.label) : ''}</div>
+    <div class="muted small">${info.rows.length} interventi · ${fmtKm(info.km)} (~${fmtDur(info.guida)} di strada) · ${db.plan.start}–${minToT(info.end)}${info.remote ? ' · zona lontana: orari dal primo cliente' : ''}${info.start && info.start.label && info.start !== db.settings.depot ? ' · parte da ' + esc(info.start.label) : ''}</div>
     <div class="actions" style="margin:8px 0">
       ${gmapsLinks(pts).map((u, i, a) => `<a class="btn ghost sm" style="padding:5px 9px;font-size:13px" href="${u}" target="_blank" rel="noopener">🗺️ Google Maps${a.length > 1 ? ` ${i + 1}/${a.length}` : ''}</a>`).join('')}
       <button class="ghost sm" onclick="reoptimize(${di},${ri})">↺ Riottimizza</button>
@@ -1959,15 +1963,17 @@ function routeCard(di, ri, r){
       <button class="ghost sm" onclick="giroWaPiano(${di},${ri})" ${info.rows.length ? '' : 'disabled'}>🟢 WhatsApp + Maps</button>
     </div>
     ${info.rows.map((x, i) => `<div class="appt">
-      <div class="at"><b>${i + 1}. ${minToT(x.eta)}</b> <span class="muted small">${i === 0 && info.remote ? 'primo cliente' : '+' + fmtKm(x.leg)}</span>
+      <div class="at"><b>${i + 1}. ${minToT(x.eta)}</b> <span class="muted small" title="Distanza e tempo di strada stimati dalla tappa precedente">${i === 0 && info.remote ? 'primo cliente' : x.leg ? '🚗 ' + fmtViaggio(x.leg) : 'stesso posto'}</span>
         ${x.s.apptId ? '<span class="badge programmato">In agenda</span>' : `<span class="badge ${CALL[x.s.call][1]}">${CALL[x.s.call][0]}</span>`}${x.s.added ? ' <span class="badge">aggiunto</span>' : ''}${x.c.prossimoCambio < ymd(new Date()) ? ' <span class="badge annullato">in ritardo</span>' : ''}</div>
-      <div><b>${esc(x.c.name)}</b> <small class="muted">${esc(x.c.codice)}</small></div>
+      <div><a href="#" onclick="schedaStop(${di},${ri},'${x.c.id}');return false" title="Apri la scheda: contratto, interventi previsti, importo"><b>${esc(x.c.name)}</b></a> <small class="muted">${esc(x.c.codice)}</small></div>
       <div class="muted small">${esc(x.c.address)}${x.c.zona && x.c.zona !== x.c.city ? ' · ' + esc(x.c.zona) : ''}</div>
       ${x.s.tipo === 'installazione' ? '<div><span class="badge in_corso">🔧 Installazione (90 min)</span></div>' : ''}
-      ${(() => { const iv = x.s.intervento || (x.s.tipo === 'installazione' ? '' : x.c.tipoIntervento || ''); return x.s.apptId ? (iv ? `<div class="interv">🛠️ ${esc(iv)}</div>` : '')
-        : `<div class="interv">🛠️ ${iv ? esc(iv) : '<span class="muted">Tipo di intervento non indicato</span>'} <button class="ghost sm" onclick="stopIntervForm(${di},${ri},'${x.c.id}')">✏️</button></div>`; })()}
+      ${(() => { const iv = stopInterv(x.s, x.c); return x.s.apptId ? (iv ? `<div class="interv">🛠️ ${esc(iv)}</div>` : '')
+        : `<div class="interv">🛠️ ${iv ? esc(iv) : '<span class="muted">Interventi previsti non indicati</span>'} <button class="ghost sm" onclick="schedaStop(${di},${ri},'${x.c.id}')" title="Scheda: interventi e importo">✏️</button></div>`
+          + importoHtml(stopImporto(x.s, x.c)); })()}
       ${x.s.apptId ? '' : `<div class="row-acts">
         <button class="sm" onclick="callForm(${di},${ri},'${x.c.id}')">📞 Chiama</button>
+        <button class="ghost sm" onclick="schedaStop(${di},${ri},'${x.c.id}')">📋 Scheda</button>
         <button class="ghost sm" onclick="nearForm(${di},${ri},'${x.c.id}')">Più vicini</button>
         <button class="ghost sm" onclick="moveStop(${di},${ri},'${x.c.id}',-1)" title="Sposta su">▲</button>
         <button class="ghost sm" onclick="moveStop(${di},${ri},'${x.c.id}',1)" title="Sposta giù">▼</button>
@@ -1977,27 +1983,96 @@ function routeCard(di, ri, r){
     </div>`).join('') || '<p class="muted empty">Nessuna tappa: aggiungi i clienti che vuoi tu.</p>'}
     ${out.length ? `<div class="small muted" style="margin-top:8px"><b>Fuori dal giro</b> (restano da programmare)</div>
       ${out.map(s => `<div class="rowline small"><s>${esc(cname(s.cid))}</s> · <span class="badge ${CALL[s.call][1]}">${CALL[s.call][0]}</span> <button class="ghost sm" onclick="setCall(${di},${ri},'${s.cid}','da_chiamare')">Rimetti</button></div>`).join('')}` : ''}
-    ${(() => { const f = bestNearest(r); return f ? `<div class="hint" style="margin-top:8px">💡 <b>Proposta:</b> ${esc(f.best.name)}${anticipo(f.best)}<br><small>${esc(f.best.address)} · allunga il giro di ${fmtKm(f.extra)}</small>
+    ${(() => { const f = bestNearest(r); return f ? `<div class="hint" style="margin-top:8px">💡 <b>Proposta:</b> ${esc(f.best.name)}${anticipo(f.best)}<br><small>${esc(f.best.address)} · allunga il giro di ${fmtViaggio(f.extra)}</small>
       <div class="row-acts"><button class="sm" onclick="replaceNearest(${di},${ri});commit()">Aggiungi</button><button class="ghost sm" onclick="nearForm(${di},${ri},'${f.best.id}')">Altri vicini</button></div></div>` : ''; })()}
     <div class="row-acts"><button class="ghost sm" onclick="addSearchForm(${di},${ri})">🔍 Aggiungi un cliente a scelta</button><button class="ghost sm" onclick="newInstallForm(${di},${ri})">➕ Cliente nuovo da installare</button></div>
   </div>`;
 }
 // Tipo di intervento per una tappa del giro (passa all'appuntamento quando si mette in agenda)
-function stopIntervForm(di, ri, cid){
-  const s = db.plan.days[di].routes[ri].stops.find(x => x.cid === cid);
-  const c = byId(db.clients, cid) || {};
-  modal(`Tipo di intervento · ${esc(c.name)}`, `<label>Cosa deve fare il tecnico<input id="si-interv" list="tipi-list" value="${esc(s.intervento || c.tipoIntervento || '')}" placeholder="Scegli dall'elenco o scrivi"></label>${tipiList()}
-    <label class="chk" style="margin-top:8px"><input type="checkbox" id="si-save" checked> Ricorda per questo cliente (prossimi cambi filtri)</label>`,
-    `<button class="ghost" onclick="closeModal()">Annulla</button><button onclick="saveStopInterv(${di},${ri},'${cid}')">Salva</button>`);
+const stopIntervForm = (di, ri, cid) => schedaStop(di, ri, cid);
+// Interventi e importo di una tappa: quelli scelti per questa visita, altrimenti quelli previsti dal contratto del cliente
+const interventiCliente = c => (c.interventiPrevisti || []).filter(Boolean);
+const stopInterv = (s, c) => s.intervento || (s.tipo === 'installazione' ? '' : interventiCliente(c).join(' + ') || c.tipoIntervento || '');
+const stopImporto = (s, c) => s.importo !== undefined && s.importo !== null ? s.importo : (s.tipo === 'installazione' ? '' : c.costo ?? '');
+// Importo libero: vuoto = non indicato, 0 = niente da incassare (es. solo una sostituzione)
+function importoHtml(v){
+  if (v === '' || v === undefined || v === null) return '';
+  return +v === 0 ? '<div class="importo">💶 Niente da incassare</div>' : `<div class="importo">💶 Da pagare: ${eur(v)}</div>`;
 }
-function saveStopInterv(di, ri, cid){
-  const s = db.plan.days[di].routes[ri].stops.find(x => x.cid === cid);
-  const v = val('si-interv').trim();
-  s.intervento = v;
+// Scheda unica del cliente in Pianifica giri: contratto, interventi previsti (da spuntare), importo libero e storico
+function schedaStop(di, ri, cid){
+  const day = db.plan.days[di], s = day.routes[ri].stops.find(x => x.cid === cid);
   const c = byId(db.clients, cid);
-  if (c && chk('si-save') && s.tipo !== 'installazione') c.tipoIntervento = v;
+  if (!s || !c) return;
+  const row = routeInfo(day.routes[ri]).rows.find(x => x.s.cid === cid);
+  // senza interventi salvati: quello abituale del cliente, se è uno dei tipi dell'elenco (non "SEMESTRALE")
+  const abituale = (db.settings.tipiIntervento || []).includes(c.tipoIntervento) ? [c.tipoIntervento] : [];
+  const scelti = (s.intervento ? s.intervento.split(' + ') : interventiCliente(c).length ? interventiCliente(c) : abituale).map(x => x.trim()).filter(Boolean);
+  const imp = stopImporto(s, c);
+  modal(`📋 ${esc(c.name)} <small class="muted">${esc(c.codice || '')}</small>`, `
+    <div class="grid2">
+      <div><b>Telefono</b><br>${esc(c.phone) || '—'}</div>
+      <div><b>Indirizzo</b><br>${esc(c.address)}</div>
+      <div><b>Visita</b><br>${fmtLong(day.date)}${row ? ` verso le <b>${minToT(row.eta)}</b>` : ''} con ${esc(tname(day.routes[ri].techId))}
+        ${row && row.leg ? `<br><small class="muted">🚗 ${fmtViaggio(row.leg)} dalla tappa precedente</small>` : ''}</div>
+      <div><b>Cambio filtri</b><br>${c.tipoIntervento ? esc(c.tipoIntervento) + ' · ' : ''}ogni ${c.filtroMesi || '—'} mesi<br>ultimo ${c.ultimoCambio ? fmtDate(c.ultimoCambio) : '—'} · scadenza <b>${c.prossimoCambio ? fmtDate(c.prossimoCambio) : '—'}</b></div>
+    </div>
+    ${contrattoHtml(c)}
+    <h3 style="margin-top:14px">🛠️ Interventi da fare in questa visita</h3>
+    ${s.tipo === 'installazione' ? '<p class="muted small">Cliente nuovo: installazione del depuratore.</p>' : ''}
+    ${interventiCheck('ss', scelti)}
+    <label class="chk" style="margin-top:6px"><input type="checkbox" id="ss-ricorda" ${interventiCliente(c).length ? '' : 'checked'}> Salva questi interventi come <b>previsti dal contratto</b> del cliente (anche per le prossime volte)</label>
+    <label style="margin-top:10px">💶 Importo da incassare in questa visita (€)
+      <input type="number" step="0.01" min="0" id="ss-importo" value="${imp ?? ''}" placeholder="Lascia vuoto se non lo sai ancora"></label>
+    <p class="muted small" style="margin:2px 0 0">Libero: lo decidi tu in base al contratto. Scrivi <b>0</b> se è solo una sostituzione senza costo.${c.costo !== undefined && c.costo !== '' ? ' Importo abituale del cliente: ' + eur(c.costo) + '.' : ''}</p>
+    ${storicoHtml(c)}`,
+    `<button class="ghost" onclick="closeModal()">Annulla</button>${s.apptId ? '' : `<button class="ghost" onclick="saveSchedaStop(${di},${ri},'${cid}', true)">📞 Salva e chiama</button>`}<button onclick="saveSchedaStop(${di},${ri},'${cid}')">Salva</button>`);
+}
+function saveSchedaStop(di, ri, cid, chiama){
+  const s = db.plan.days[di].routes[ri].stops.find(x => x.cid === cid);
+  const c = byId(db.clients, cid);
+  const scelti = interventiLetti('ss');
+  s.intervento = scelti.join(' + ');
+  const v = val('ss-importo');
+  s.importo = v === '' ? '' : round2(Math.max(0, +v));
+  if (chk('ss-ricorda') && s.tipo !== 'installazione') c.interventiPrevisti = scelti;
   closeModal();
   commit();
+  if (chiama) callForm(di, ri, cid);
+}
+// Caselle degli interventi: quelli delle Impostazioni + quelli già scelti per il cliente + "altro" scritto a mano
+function interventiCheck(pfx, scelti){
+  const tipi = [...new Set([...(db.settings.tipiIntervento || []), ...scelti])];
+  return `<div class="grid2" id="${pfx}-iv">${tipi.map(t => `<label class="chk"><input type="checkbox" value="${esc(t)}" ${scelti.includes(t) ? 'checked' : ''}> ${esc(t)}</label>`).join('')}</div>
+    <label style="margin-top:6px">Altro (se non è nell'elenco)<input id="${pfx}-altro" placeholder="Es. cambio rubinetto"></label>`;
+}
+function interventiLetti(pfx){
+  const v = [...document.querySelectorAll(`#${pfx}-iv input:checked`)].map(x => x.value);
+  const altro = val(pfx + '-altro').trim();
+  return altro ? v.concat(altro.split(/\s*[,+]\s*/).filter(Boolean)) : v;
+}
+// Contratto del cliente: data, tipo, periodicità, interventi previsti, importo abituale e note del contratto
+function contrattoHtml(c){
+  const iv = interventiCliente(c);
+  return `<h3 style="margin-top:14px">📄 Contratto</h3>
+    <div class="grid2 small">
+      <div><b>Data del contratto</b><br>${c.dataContratto ? fmtDate(c.dataContratto) : '<span class="muted">non indicata</span>'}</div>
+      <div><b>Tipo di contratto</b><br>${esc(c.tipoContratto) || '<span class="muted">non indicato</span>'}</div>
+      <div><b>Periodicità</b><br>${c.tipoIntervento ? esc(c.tipoIntervento) + ' · ' : ''}ogni ${c.filtroMesi || '—'} mesi</div>
+      <div><b>Importo abituale</b><br>${c.costo !== undefined && c.costo !== '' ? eur(c.costo) : '<span class="muted">—</span>'}</div>
+      <div class="full"><b>Interventi previsti</b><br>${iv.length ? iv.map(x => '🛠️ ' + esc(x)).join('<br>') : '<span class="muted">non indicati</span>'}</div>
+    </div>
+    ${c.notes ? `<p class="note">${esc(c.notes)}</p>` : ''}`;
+}
+// Storico: interventi in agenda (con cosa è stato fatto e importo) e ultima manutenzione registrata
+function storicoHtml(c, max = 15){
+  const apps = db.appointments.filter(a => a.clientId === c.id).sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time));
+  const righe = apps.slice(0, max).map(a => `<div class="rowline small">${fmtDate(a.date)} · <span class="badge ${a.status}">${STATUS[a.status]}</span>
+      ${a.intervento ? ' 🛠️ ' + esc(a.intervento) : ' ' + esc(a.service || '')}${a.problema ? ' · ' + esc(a.problema) : ''}${a.importo !== undefined && a.importo !== '' && a.importo !== null ? ' · 💶 ' + eur(a.importo) : ''}
+      <span class="muted">· ${esc(tname(a.techId))}</span></div>`);
+  const ultimoInAgenda = apps.some(a => a.status === 'completato' && a.date === c.ultimoCambio);
+  if (c.ultimoCambio && !ultimoInAgenda) righe.push(`<div class="rowline small">${fmtDate(c.ultimoCambio)} · <span class="badge completato">Fatto</span> Ultima manutenzione${c.tipoIntervento ? ' (' + esc(c.tipoIntervento) + ')' : ''} <span class="muted">· dall'anagrafica</span></div>`);
+  return `<h3 style="margin-top:14px">🕘 Storico interventi</h3>${righe.join('') || '<p class="muted small">Nessun intervento registrato.</p>'}`;
 }
 function routeOpts(di, ri){
   return db.plan.days.flatMap((d, dj) => d.routes.map((r, rj) => dj === di && rj === ri ? '' :
@@ -2041,7 +2116,7 @@ function drawAddList(di, ri){
   const inP = inPlanSet();
   const list = daProgrammare(addMonths(db.plan.month + '-01', 1).slice(0, 7), true).filter(c => !inP.has(c.id) && (!q || [c.name, c.address, c.zona, c.city, c.codice].join(' ').toLowerCase().includes(q)))
     .map(c => ({c, d: roadKm(ref, c)})).sort((a, b) => a.d - b.d).slice(0, 15);
-  document.getElementById('add-list').innerHTML = list.map(({c, d}) => `<div class="rowline"><b>${fmtKm(d)}</b> · ${esc(c.name)}${anticipo(c)}<br><small class="muted">${esc(c.address)} · scadenza ${fmtDate(c.prossimoCambio)}</small>
+  document.getElementById('add-list').innerHTML = list.map(({c, d}) => `<div class="rowline"><b>${fmtViaggio(d)}</b> · ${esc(c.name)}${anticipo(c)}<br><small class="muted">${esc(c.address)} · scadenza ${fmtDate(c.prossimoCambio)}</small>
     <div class="row-acts"><button class="sm" onclick="addToRoute(${di},${ri},'${c.id}')">Aggiungi</button></div></div>`).join('') || '<p class="muted">Nessun cliente trovato.</p>';
 }
 // Tocco su un puntino grigio della mappa: scegli in quale giro metterlo
@@ -2050,7 +2125,7 @@ function mapPick(di, cid){
   modal(`Aggiungi ${esc(c.name)}`, `<p>${esc(c.address)}<br><small class="muted">Cambio filtri ogni ${c.filtroMesi} mesi · scadenza ${fmtDate(c.prossimoCambio)}</small></p>
     <b>In quale giro di ${fmtDate(day.date)}?</b>
     ${day.routes.map((r, ri) => { const rows = routeInfo(r).rows; const d = rows.length ? Math.min(...rows.map(x => roadKm(x.c, c))) : roadKm(db.settings.depot, c);
-      return `<div class="rowline"><button class="sm" onclick="addToRoute(${di},${ri},'${cid}')">${esc(tname(r.techId))}</button> <span class="muted small">tappa più vicina a ${fmtKm(d)}</span></div>`; }).join('')}`,
+      return `<div class="rowline"><button class="sm" onclick="addToRoute(${di},${ri},'${cid}')">${esc(tname(r.techId))}</button> <span class="muted small">tappa più vicina a ${fmtViaggio(d)}</span></div>`; }).join('')}`,
     `<button class="ghost" onclick="closeModal()">Annulla</button>`);
 }
 // Completare un cambio filtri aggiorna la prossima scadenza del cliente
@@ -2358,7 +2433,7 @@ function listaDaAgenda(techId, day){
 function listaDaPiano(di, ri){
   return routeInfo(db.plan.days[di].routes[ri]).rows.map(({s, c, eta}) => {
     const a = s.apptId && byId(db.appointments, s.apptId);
-    return a ? listaRiga(c, a.time, a) : listaRiga(c, minToT(eta), {intervento: s.intervento || (s.tipo === 'installazione' ? 'Installazione depuratore' : c.tipoIntervento), importo: c.costo});
+    return a ? listaRiga(c, a.time, a) : listaRiga(c, minToT(eta), {intervento: s.tipo === 'installazione' && !s.intervento ? 'Installazione depuratore' : stopInterv(s, c), importo: stopImporto(s, c)});
   });
 }
 function listaRiga(c, ora, a){
@@ -2568,7 +2643,6 @@ function clientRow(c){
 }
 function clientCard(id){
   const c = byId(db.clients, id);
-  const apps = db.appointments.filter(a => a.clientId === id).sort((a,b) => b.date.localeCompare(a.date)).slice(0,12);
   const invs = isAdmin() ? db.invoices.filter(i => i.clientId === id).sort((a,b) => b.date.localeCompare(a.date)).slice(0,8) : [];
   modal(`${esc(c.name)} <small class="muted">${esc(c.codice)}</small>`, `
     <div class="grid2">
@@ -2578,13 +2652,12 @@ function clientCard(id){
       ${isAdmin() ? `<div><b>Dati fiscali</b><br>P.IVA/CF ${esc(c.vat) || '—'}<br>SDI ${esc(c.sdi) || '—'} · PEC ${esc(c.pec) || '—'}</div>` : ''}
       <div><b>Privacy</b><br>${c.whatsappOk ? 'Consenso WhatsApp dal ' + (c.consentDate ? fmtDate(c.consentDate) : '—') : 'Nessun consenso WhatsApp'}</div>
     </div>
-    ${c.notes ? `<p class="note">${esc(c.notes)}</p>` : ''}
+    ${contrattoHtml(c)}
     ${c.extra && Object.keys(c.extra).length ? `<h3 style="margin-top:14px">Altri dati dal file</h3>
       <div class="small">${Object.entries(c.extra).map(([k, v]) => `<div class="rowline"><b>${esc(k)}</b> ${esc(v)}</div>`).join('')}</div>` : ''}
-    <h3 style="margin-top:14px">Ultimi interventi</h3>
-    ${apps.map(a => `<div class="rowline small">${fmtDate(a.date)} ${a.time} · ${esc(a.service)}${a.intervento ? ' · ' + esc(a.intervento) : ''}${a.problema ? ' · ' + esc(a.problema) : ''} · <span class="badge ${a.status}">${STATUS[a.status]}</span></div>`).join('') || '<p class="muted small">Nessuno</p>'}
+    ${storicoHtml(c)}
     ${isAdmin() ? `<h3 style="margin-top:14px">Fatture</h3>${invs.map(i => `<div class="rowline small">${esc(i.number)} · ${fmtDate(i.date)} · ${eur(i.totale)} · ${i.status}</div>`).join('') || '<p class="muted small">Nessuna</p>'}` : ''}`,
-    `<button class="ghost" onclick="closeModal()">Chiudi</button>${isAdmin() ? `<button class="ghost" onclick="gdprExport('${id}')">Esporta dati (privacy)</button><button class="danger" onclick="gdprErase('${id}')">Anonimizza</button>` : ''}`);
+    `<button class="ghost" onclick="closeModal()">Chiudi</button>${isAdmin() ? `<button class="ghost" onclick="clientForm('${id}')">✏️ Modifica</button><button class="ghost" onclick="gdprExport('${id}')">Esporta dati (privacy)</button><button class="danger" onclick="gdprErase('${id}')">Anonimizza</button>` : ''}`);
 }
 function gdprExport(id){
   if (!requireAdmin()) return;
@@ -2618,8 +2691,13 @@ function clientForm(id){
       <label class="full">PEC<input id="f-pec" value="${esc(c.pec)}"></label>
       <label>Cambio filtri ogni (mesi)<input type="number" min="1" id="f-ft" value="${c.filtroMesi || 6}"></label>
       <label>Prossimo cambio filtri<input type="date" id="f-next" value="${c.prossimoCambio || ''}"></label>
-      <label class="full">Tipo di cambio filtri / impianto del cliente<input id="f-interv" list="tipi-list" value="${esc(c.tipoIntervento || '')}" placeholder="Scegli dall'elenco o scrivi"></label>
+      <label class="full">Periodicità / tipo di cambio filtri<input id="f-interv" list="tipi-list" value="${esc(c.tipoIntervento || '')}" placeholder="Scegli dall'elenco o scrivi"></label>
       ${tipiList()}
+      <label>Data del contratto<input type="date" id="f-dcontr" value="${c.dataContratto || ''}"></label>
+      <label>Tipo di contratto<input id="f-tcontr" list="contratti-list" value="${esc(c.tipoContratto || '')}" placeholder="Es. Noleggio, Vendita…"></label>
+      <datalist id="contratti-list">${['Noleggio', 'Noleggio sottozoccolo', 'Vendita', 'Comodato d\'uso', 'Solo manutenzione'].map(t => `<option value="${esc(t)}">`).join('')}</datalist>
+      <label>Importo abituale (€) <small class="muted">libero, anche 0</small><input type="number" step="0.01" min="0" id="f-costo" value="${c.costo ?? ''}"></label>
+      <div class="full"><b>Interventi previsti dal contratto</b>${interventiCheck('fc', interventiCliente(c))}</div>
       <label class="chk"><input type="checkbox" id="f-monthly" ${c.monthly ? 'checked' : ''}> Contratto mensile</label>
       <label class="chk"><input type="checkbox" id="f-wa" ${c.whatsappOk ? 'checked' : ''}> Consenso a ricevere messaggi WhatsApp</label>
       <label class="full">Note<textarea id="f-notes">${esc(c.notes)}</textarea></label>
@@ -2633,7 +2711,9 @@ function saveClient(id){
   const wa = chk('f-wa');
   const data = {name, type:val('f-type'), phone:val('f-phone').trim(), email:val('f-email').trim(), address:val('f-address').trim(),
     city:val('f-city').trim(), cap:val('f-cap').trim(), vat:val('f-vat').trim(), sdi:val('f-sdi').trim(), pec:val('f-pec').trim(),
-    monthly:chk('f-monthly'), whatsappOk:wa, notes:val('f-notes').trim(), filtroMesi:+val('f-ft') || 6, prossimoCambio:val('f-next'), tipoIntervento:val('f-interv').trim()};
+    monthly:chk('f-monthly'), whatsappOk:wa, notes:val('f-notes').trim(), filtroMesi:+val('f-ft') || 6, prossimoCambio:val('f-next'), tipoIntervento:val('f-interv').trim(),
+    dataContratto:val('f-dcontr'), tipoContratto:val('f-tcontr').trim(), interventiPrevisti:interventiLetti('fc'),
+    costo:val('f-costo') === '' ? '' : round2(Math.max(0, +val('f-costo')))};
   // Demo: posizione indicativa dal comune. Nella versione definitiva l'indirizzo viene convertito in coordinate esatte.
   const old = id ? byId(db.clients, id) : null;
   if (!old || !old.lat || old.city !== data.city) { const g = geoGuess(data.city); if (g) Object.assign(data, g, {zona: data.city}); }
@@ -3316,7 +3396,8 @@ function planImport(rows){
     interv:col('intervento','tipo_intervento','impianto','tipo_impianto','tipo_di_intervento'),
     ultimo:col('ultima_manutenzione','ultima_manut','manutenzione','ultimo_cambio','ultimo_cambio_filtri','data_ultima_manutenzione','ultimo_intervento'),
     prossimo:col('manutenzione_programmata','manut_programmata','prossima_manut','prossimo_cambio','prossima_manutenzione','scadenza','prossimo_intervento','data_programmata'),
-    mesi:col('filtri_ogni_mesi','mesi','frequenza','periodicita','frequenza_mesi'), costo:col('costo','importo','prezzo','canone','costo_intervento')};
+    mesi:col('filtri_ogni_mesi','mesi','frequenza','periodicita','frequenza_mesi'), costo:col('costo','importo','prezzo','canone','costo_intervento'),
+    dcontr:col('data_contratto','data_inizio_contratto','inizio_contratto','data_stipula'), tcontr:col('tipo_contratto','contratto','tipologia_contratto')};
   if (ix.name < 0) return alert('Colonna "nome" o "cliente" non trovata. Intestazioni lette: ' + H.join(', '));
   // le colonne che il gestionale non conosce non si perdono: restano nella scheda del cliente ("Altri dati dal file")
   const extraCols = rows[0].map((h, i) => ({h: String(h ?? '').trim(), i})).filter(x => x.h && !used.has(x.i));
@@ -3347,6 +3428,8 @@ function planImport(rows){
       data[k === 'ultimo' ? 'ultimoCambio' : 'prossimoCambio'] = d;
     });
     if (ix.mesi >= 0 && +g('mesi') > 0) data.filtroMesi = +g('mesi');
+    put('tcontr', 'tipoContratto');
+    if (ix.dcontr >= 0) data.dataContratto = parseDataIt(r[ix.dcontr]);
     const extra = {};
     // comune scritto in modo diverso ("Mazara", "S. Flavia", "Mondello"): si usa il nome ufficiale e la sua provincia,
     // e il testo originale resta tra gli altri dati
