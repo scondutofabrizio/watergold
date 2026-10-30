@@ -503,7 +503,11 @@ const LOCALITA = {'mondello':'Palermo', 'sferracavallo':'Palermo', 'tommaso nata
   'torretta granitola':'Campobello di Mazara', 'triscina':'Castelvetrano', 'selinunte':'Castelvetrano', 'marinella di selinunte':'Castelvetrano',
   'villaggio mose':'Agrigento', 'san leone':'Agrigento', 'mortelle':'Messina', 'ganzirri':'Messina', 'giardini':'Giardini-Naxos', 'acitrezza':'Aci Castello',
   'aci trezza':'Aci Castello', 'ognina':'Catania', 'marina di ragusa':'Ragusa', 'mazzaro':'Taormina', 'capo d orlando marina':"Capo d'Orlando",
-  'tre fontane di campobello':'Campobello di Mazara', 'piana degli albanesi':'Piana degli Albanesi'};
+  'tre fontane di campobello':'Campobello di Mazara', 'piana degli albanesi':'Piana degli Albanesi',
+  // frazioni trovate nell'anagrafica della cliente (30/10/2026) e altre vicine
+  'casa santa':'Erice', 'casasanta':'Erice', 'napola':'Erice', 'ballata':'Erice', 'pizzolungo':'Erice', 'portella di mare':'Misilmeri',
+  'locogrande':'Marsala', 'strasatti':'Marsala', 'ciavolo':'Marsala', 'castelluzzo':'San Vito Lo Capo', 'macari':'San Vito Lo Capo',
+  'marausa':'Trapani', 'rilievo':'Trapani', 'fulgatore':'Trapani', 'guarrato':'Trapani', 'xitta':'Trapani'};
 const normC = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
   .replace(/\(.*?\)/g, ' ').replace(/[^a-z0-9]+/g, ' ').trim();
 const SANTI = /^(s|san|santa|santo|sant|ss)\s+/;
@@ -521,6 +525,14 @@ function findComune(city){
   if (parts.length > 1 && /^([a-z]{2}|\d{5})$/.test(parts[parts.length - 1])) { const r = findComune(parts.slice(0, -1).join(' ')); if (r) return r; }
   const uno = list => list.length === 1 ? list[0] : null;
   if (SANTI.test(q)) { const resto = q.replace(SANTI, ''); const r = uno(COMUNI.filter(c => SANTI.test(normC(c[0])) && normC(c[0]).replace(SANTI, '') === resto)); if (r) return r; }
+  // nome spezzato andando a capo nella cella del PDF: "CASTELVETR ANO"
+  const unito = q.replace(/ /g, '');
+  const r1 = uno(COMUNI.filter(c => normC(c[0]).replace(/ /g, '') === unito));
+  if (r1) return r1;
+  const loc = Object.keys(LOCALITA).find(k => k.replace(/ /g, '') === unito);
+  if (loc) return byName(LOCALITA[loc]);
+  // frazione seguita dal comune: "CASA SANTA ERICE"
+  for (let k = 1; k < parts.length; k++) { const r = comuniIdx.get(parts.slice(k).join(' ')); if (r) return r; }
   if (q.length >= 4) return uno(COMUNI.filter(c => normC(c[0]).startsWith(q + ' ') || normC(c[0]).startsWith(q)));
   return null;
 }
