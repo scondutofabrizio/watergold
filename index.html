@@ -3570,7 +3570,7 @@ function viewSettings(){
       <div class="tbl-wrap"><table><thead><tr><th>Nome</th><th>Ruolo</th><th></th></tr></thead><tbody>
       ${db.users.map(u => `<tr><td><span class="badge" style="background:${u.color};color:#fff">&nbsp;</span> <b>${esc(u.name)}</b><br><small class="muted">${esc(u.email)}</small></td>
         <td>${ruoloNome(u)}</td>
-        <td class="acts">${u.titolare && !me.titolare ? '<small class="muted">gestito da Fabrizio</small>' : `${SERVER && u.role === 'tecnico' ? `<button class="sm" onclick="collegaTelefono('${u.id}')">📱 Collega telefono</button>` : ''}<button class="ghost sm" onclick="userForm('${u.id}')">Modifica</button>${u.id === me.id ? '' : `<button class="danger sm" onclick="delUser('${u.id}')">✕</button>`}`}</td></tr>`).join('')}
+        <td class="acts">${u.titolare && !me.titolare ? '' : `${SERVER && u.role === 'tecnico' ? `<button class="sm" onclick="collegaTelefono('${u.id}')">📱 Collega telefono</button>` : ''}<button class="ghost sm" onclick="userForm('${u.id}')">Modifica</button>${u.id === me.id ? '' : `<button class="danger sm" onclick="delUser('${u.id}')">✕</button>`}`}</td></tr>`).join('')}
       </tbody></table></div>
       <div class="actions" style="margin-top:10px"><button class="ghost" onclick="userForm()">+ Nuovo utente</button>${SERVER ? '<button class="ghost" onclick="formMiaPw()">🔑 Cambia la mia password</button>' : ''}</div>
       ${SERVER ? '<p class="muted small">Password dimenticata da un utente della segreteria? Apri "Modifica" e scrivi una password temporanea: al primo accesso dovrà sceglierne una sua.</p>' : ''}
