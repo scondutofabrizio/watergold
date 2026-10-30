@@ -3056,8 +3056,9 @@ function importClients(input){
   input.value = '';
 }
 // PDF a tabella → righe come quelle del foglio Excel. La libreria pdf.js si carica solo la prima volta che serve.
-// Le colonne si ricavano dalla riga delle intestazioni (posizione orizzontale di ogni titolo); le intestazioni
-// ripetute in cima a ogni pagina si saltano e le righe spezzate su due linee (indirizzo lungo) si riuniscono.
+// Se la tabella ha la griglia disegnata (PDF da Excel con i bordi) le celle si ricavano dai bordi: una cella su più
+// linee (nome e cognome, due telefoni, indirizzo lungo) resta una cella sola. Senza griglia le colonne si ricavano
+// dalla riga delle intestazioni; le intestazioni ripetute si saltano e le righe spezzate su due linee si riuniscono.
 const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
 function loadPdfJs(){
   if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
@@ -3069,14 +3070,105 @@ function loadPdfJs(){
     document.head.appendChild(sc);
   });
 }
+// Bordi della tabella: rettangoli sottili e segmenti orizzontali/verticali disegnati nella pagina → {xs, ys} delle separazioni
+async function pdfGriglia(lib, pg){
+  const O = lib.OPS, ol = await pg.getOperatorList();
+  const xs = [], ys = [], stack = [];
+  let px = [], py = [];   // segmenti del percorso in costruzione: contano solo se poi viene disegnato (non i ritagli delle celle)
+  const PINTA = new Set([O.fill, O.eoFill, O.stroke, O.closeStroke, O.fillStroke, O.eoFillStroke, O.closeFillStroke, O.closeEOFillStroke]);
+  let m = [1, 0, 0, 1, 0, 0];
+  const per = (a, b) => [a[0]*b[0] + a[2]*b[1], a[1]*b[0] + a[3]*b[1], a[0]*b[2] + a[2]*b[3], a[1]*b[2] + a[3]*b[3], a[0]*b[4] + a[2]*b[5] + a[4], a[1]*b[4] + a[3]*b[5] + a[5]];
+  const pt = (x, y) => [m[0]*x + m[2]*y + m[4], m[1]*x + m[3]*y + m[5]];
+  const seg = (x1, y1, x2, y2) => {   // in coordinate di pagina
+    const w = Math.abs(x2 - x1), h = Math.abs(y2 - y1);
+    if (w <= 2.5 && h > 15) px.push((x1 + x2) / 2);
+    else if (h <= 2.5 && w > 15) py.push((y1 + y2) / 2);
+  };
+  ol.fnArray.forEach((fn, i) => {
+    const a = ol.argsArray[i];
+    if (PINTA.has(fn)) { xs.push(...px); ys.push(...py); px = []; py = []; }
+    else if (fn === O.endPath) { px = []; py = []; }
+    if (fn === O.save) stack.push(m);
+    else if (fn === O.restore) m = stack.pop() || [1, 0, 0, 1, 0, 0];
+    else if (fn === O.transform) m = per(m, a);
+    else if (fn === O.constructPath) {
+      const [ops, c] = a; let k = 0, cur = null;
+      for (const op of ops) {
+        if (op === O.rectangle) {
+          const [x, y, w, h] = c.slice(k, k + 4); k += 4;
+          const p1 = pt(x, y), p2 = pt(x + w, y + h);
+          // rettangolo sottile = una linea; rettangolo grande = i suoi quattro lati
+          seg(p1[0], p1[1], p2[0], p1[1]); seg(p1[0], p2[1], p2[0], p2[1]); seg(p1[0], p1[1], p1[0], p2[1]); seg(p2[0], p1[1], p2[0], p2[1]);
+          if (Math.abs(p2[0] - p1[0]) <= 2.5 && Math.abs(p2[1] - p1[1]) > 15) px.push((p1[0] + p2[0]) / 2);
+          if (Math.abs(p2[1] - p1[1]) <= 2.5 && Math.abs(p2[0] - p1[0]) > 15) py.push((p1[1] + p2[1]) / 2);
+        } else if (op === O.moveTo) { cur = pt(c[k], c[k + 1]); k += 2; }
+        else if (op === O.lineTo) { const q = pt(c[k], c[k + 1]); k += 2; if (cur) seg(cur[0], cur[1], q[0], q[1]); cur = q; }
+        else if (op === O.curveTo) k += 6;
+        else if (op === O.curveTo2 || op === O.curveTo3) k += 4;
+      }
+    }
+  });
+  const uniq = v => v.sort((a, b) => a - b).filter((x, i, arr) => !i || x - arr[i - 1] > 3);
+  return {xs: uniq(xs), ys: uniq(ys)};
+}
+const PDF_TITOLI = new Set(['codice','tipo','telefono','cellulare','tel','email','indirizzo','via','cap','citta','comune','localita','zona',
+  'provincia','prov','piva','note','annotazioni','intervento','impianto','scadenza','mesi','frequenza','costo','importo','prezzo','canone']);
+// Con la griglia: ogni pezzo di testo va nella cella che lo contiene; le linee di una cella si uniscono con uno spazio
+function pdfCelle(pagine){
+  const ok = pagine.filter(p => p.griglia.xs.length >= 3 && p.griglia.ys.length >= 3);
+  if (ok.length < pagine.length / 2) return null;
+  const tutte = [];
+  for (const p of ok) {
+    const {xs, ys} = p.griglia;
+    const celle = new Map();
+    for (const t of p.its) {
+      const cx = t.x + Math.min(2, (t.x2 - t.x) / 2), cy = t.y + t.h * 0.3;
+      const c = xs.findIndex((x, i) => i < xs.length - 1 && cx >= x && cx < xs[i + 1]);
+      let r = ys.findIndex((y, i) => i < ys.length - 1 && cy >= y && cy < ys[i + 1]);
+      if (r < 0 && cy >= ys[ys.length - 1] && cy - ys[ys.length - 1] < 15) r = ys.length - 2;
+      if (c < 0 || r < 0) continue;
+      const k = r * 1000 + c;
+      if (!celle.has(k)) celle.set(k, []);
+      celle.get(k).push(t);
+    }
+    for (let r = ys.length - 2; r >= 0; r--) {   // dall'alto (y più grande) in basso
+      const riga = [];
+      for (let c = 0; c < xs.length - 1; c++) {
+        const ts = (celle.get(r * 1000 + c) || []).sort((a, b) => b.y - a.y || a.x - b.x);
+        riga.push(ts.map(t => t.s.trim()).join(' ').replace(/\s+/g, ' ').trim());
+      }
+      if (riga.some(Boolean)) tutte.push(riga);
+    }
+  }
+  // Excel stampa un foglio largo "in giù e poi a destra": prima tutte le pagine con le prime colonne, poi quelle con le
+  // altre (es. COSTO e NOTE), con le stesse righe nello stesso ordine. Ogni riga di titoli apre una parte; le parti
+  // con lo stesso numero di righe della parte principale si affiancano.
+  const titolo = r => r.some(x => NOMI_COL.includes(normH(x))) || (r.some(Boolean) && r.filter(Boolean).every(x => PDF_TITOLI.has(normH(x))));
+  const parti = [];
+  for (const r of tutte) {
+    if (titolo(r)) {
+      const k = r.map(normH).join('|');
+      if (!parti.some(p => p.k === k)) parti.push({k, h: r, rows: []});
+      parti.cur = parti.find(p => p.k === k);
+    } else if (parti.cur) parti.cur.rows.push(r);
+  }
+  const main = parti.find(p => p.h.some(x => NOMI_COL.includes(normH(x))));
+  if (!main) return null;
+  const cols = p => p.h.map((h, i) => h ? i : -1).filter(i => i >= 0);   // colonne senza titolo (bordi doppi) si scartano
+  const accanto = parti.filter(p => p !== main && p.rows.length === main.rows.length);
+  const tab = [main, ...accanto];
+  return [tab.flatMap(p => cols(p).map(i => p.h[i]))].concat(main.rows.map((_, n) => tab.flatMap(p => cols(p).map(i => p.rows[n][i]))));
+}
 async function pdfRows(buf){
   const lib = await loadPdfJs();
   const pdf = await lib.getDocument({data: new Uint8Array(buf)}).promise;
   const linee = [];   // {y, items:[{x, x2, s}]} pagina per pagina, dall'alto in basso
+  const pagine = [];
   for (let n = 1; n <= pdf.numPages; n++) {
     const pg = await pdf.getPage(n);
     const tc = await pg.getTextContent();
     const its = tc.items.filter(t => t.str && t.str.trim()).map(t => ({x: t.transform[4], y: t.transform[5], x2: t.transform[4] + t.width, h: Math.abs(t.transform[3]) || 8, s: t.str}));
+    pagine.push({its, griglia: await pdfGriglia(lib, pg)});
     its.sort((a, b) => b.y - a.y || a.x - b.x);
     const pl = [];
     for (const t of its) {
@@ -3087,6 +3179,8 @@ async function pdfRows(buf){
     linee.push(...pl);
   }
   if (!linee.length) throw new Error('nel PDF non c\'è testo da leggere: probabilmente è una scansione o una foto. Serve il file Excel o un PDF creato dal programma.');
+  const daGriglia = pdfCelle(pagine);
+  if (daGriglia) return daGriglia;
   // intestazioni: pezzi vicini sulla stessa linea = un solo titolo, salvo che uno dei due sia già un titolo noto (COSTO)
   const NOTI = new Set([...NOMI_COL, 'codice','tipo','telefono','cellulare','tel','email','indirizzo','via','cap','citta','comune','localita',
     'zona','provincia','prov','piva','note','intervento','impianto','scadenza','mesi','frequenza','costo','importo','prezzo','canone']);
@@ -3140,6 +3234,9 @@ function parseDataIt(v){
   if (m) { const y = m[3].length === 2 ? 2000 + +m[3] : +m[3]; if (+m[2] >= 1 && +m[2] <= 12 && +m[1] >= 1 && +m[1] <= 31) return `${y}-${pad(+m[2])}-${pad(+m[1])}`; }
   m = s.match(/^(\d{1,2})[\/.\-](\d{4})$/);
   if (m && +m[1] >= 1 && +m[1] <= 12) return `${m[2]}-${pad(+m[1])}-01`;
+  m = s.toLowerCase().match(/^([a-z]{3})[a-z]*\.?[\s\/\-]*(\d{4})$/);   // NOVEMBRE 2026, nov-2026
+  const mese = m ? ['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'].indexOf(m[1]) : -1;
+  if (mese >= 0) return `${m[2]}-${pad(mese + 1)}-01`;
   return '';
 }
 const parseEuro = v => { const s = String(v ?? '').replace(/[€\s]/g, ''); if (!s) return ''; const n = +(/,\d{1,2}$/.test(s) ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, '')); return isFinite(n) ? round2(n) : ''; };
@@ -3155,7 +3252,8 @@ function planImport(rows){
   if (rows.length < 2) return alert('Il file è vuoto o non contiene righe di dati.');
   const H = rows[0].map(normH);
   const used = new Set();
-  const col = (...names) => { for (const n of names) { const i = H.indexOf(n); if (i >= 0) { used.add(i); return i; } } return -1; };
+  const H0 = H.map(h => h.replace(/_/g, ''));   // intestazioni spezzate a metà parola nel PDF ("MANUTENZIO NE")
+  const col = (...names) => { for (const n of names) { let i = H.indexOf(n); if (i < 0) i = H0.indexOf(n.replace(/_/g, '')); if (i >= 0 && !used.has(i)) { used.add(i); return i; } } return -1; };
   const ix = {codice:col('codice','codice_cliente','id'),
     name:col(...NOMI_COL), type:col('tipo','tipo_cliente'),
     phone:col('telefono','cellulare','tel','cell','recapito','telefono_cellulare','numero'), email:col('email','mail','e_mail'),
@@ -3164,7 +3262,7 @@ function planImport(rows){
     vat:col('piva','p_iva','partita_iva','cf','codice_fiscale'), sdi:col('sdi','codice_sdi'),
     pec:col('pec'), monthly:col('mensile','contratto_mensile'), wa:col('consenso_whatsapp','whatsapp'), notes:col('note','annotazioni'),
     interv:col('intervento','tipo_intervento','impianto','tipo_impianto','tipo_di_intervento'),
-    ultimo:col('ultima_manutenzione','ultima_manut','ultimo_cambio','ultimo_cambio_filtri','data_ultima_manutenzione','ultimo_intervento'),
+    ultimo:col('ultima_manutenzione','ultima_manut','manutenzione','ultimo_cambio','ultimo_cambio_filtri','data_ultima_manutenzione','ultimo_intervento'),
     prossimo:col('manutenzione_programmata','manut_programmata','prossima_manut','prossimo_cambio','prossima_manutenzione','scadenza','prossimo_intervento','data_programmata'),
     mesi:col('filtri_ogni_mesi','mesi','frequenza','periodicita','frequenza_mesi'), costo:col('costo','importo','prezzo','canone','costo_intervento')};
   if (ix.name < 0) return alert('Colonna "nome" o "cliente" non trovata. Intestazioni lette: ' + H.join(', '));
