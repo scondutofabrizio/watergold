@@ -842,6 +842,38 @@ function srvStatus(){
   me = db.users.find(u => u.id === me.id) || me;
   render();
 }
+// Password temporanea (data dall'amministratore o dalla segreteria): al primo accesso se ne sceglie una propria
+function showCambioPw(err = ''){
+  $('#app').hidden = true;
+  $('#login').hidden = false;
+  $('#login').innerHTML = `<div class="login-box">
+    <div class="brand">Watergold</div>
+    <h2 style="margin:0">🔑 Scegli la tua password</h2>
+    <p class="muted small" style="margin:0">Stai usando una password temporanea. Scegline una tua, di almeno 10 caratteri: la userai dai prossimi accessi.</p>
+    ${err ? `<p class="err">${esc(err)}</p>` : ''}
+    <label>Nuova password<input id="np-1" type="password" autocomplete="new-password"></label>
+    <label>Ripeti la nuova password<input id="np-2" type="password" autocomplete="new-password" onkeydown="if(event.key==='Enter')cambiaPw(true)"></label>
+    <button class="big" onclick="cambiaPw(true)">Salva ed entra</button>
+    <button class="ghost" onclick="logout()">Esci</button>
+  </div>`;
+}
+async function cambiaPw(primoAccesso){
+  const a = val('np-1'), b = val('np-2');
+  const errore = m => primoAccesso ? showCambioPw(m) : alert(m);
+  if (a.length < 10) return errore('La password deve avere almeno 10 caratteri.');
+  if (a !== b) return errore('Le due password non coincidono.');
+  try { await srvApi('/api/password', {password: a}); }
+  catch(e) { return errore(e.auth ? 'Accesso scaduto: entra di nuovo.' : e.message === 'Failed to fetch' ? 'Server non raggiungibile.' : e.message); }
+  if (primoAccesso) return location.reload();
+  closeModal();
+  alert('Password cambiata. Dal prossimo accesso usa quella nuova.');
+}
+function formMiaPw(){
+  modal('🔑 Cambia la mia password', `
+    <label>Nuova password (almeno 10 caratteri)<input id="np-1" type="password" autocomplete="new-password"></label>
+    <label>Ripeti la nuova password<input id="np-2" type="password" autocomplete="new-password"></label>`,
+    `<button class="ghost" onclick="closeModal()">Annulla</button><button onclick="cambiaPw(false)">Salva</button>`);
+}
 function srvLost(){
   me = null;
   try { localStorage.removeItem(SRV_KEY); } catch(e) {}
@@ -850,8 +882,9 @@ function srvLost(){
 async function srvStart(){
   try { if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js'); } catch(e) {}
   try {
-    const {user} = await srvApi('/api/me');
+    const {user, cambiaPw} = await srvApi('/api/me');
     if (!user) { try { localStorage.removeItem(SRV_KEY); } catch(e) {} return showLogin(); }
+    if (cambiaPw) return showCambioPw();   // password temporanea: prima se ne sceglie una propria
     me = user;
     if (srvCacheMe && srvCacheMe !== user.id) { srvSynced = {}; srvDirty = false; }   // copia di un altro utente: non si invia
     if (srvDirty) await srvSync();   // modifiche fatte senza rete prima di chiudere la pagina
@@ -949,7 +982,9 @@ const VIEWS = {dash:viewDash, pianifica:viewPianifica, agenda:viewAgenda, giro:v
   promemoria:viewPromemoria, messaggi:viewWa, fatture:viewFatture, report:viewReport, automazioni:viewAuto,
   dati:viewDati, qr:viewQr, richieste:viewRichieste, impost:viewSettings};
 // Nome di chi è collegato, nel pannello e nel saluto: "Amministratore" per la segreteria, il nome per i tecnici
-const nomeAccesso = () => isAdmin() ? 'Amministratore' : me.name;
+// con il server "Amministratore" è solo Fabrizio (titolare); la segreteria e i tecnici vedono il loro nome
+const nomeAccesso = () => (SERVER ? me.titolare : isAdmin()) ? 'Amministratore' : me.name;
+const ruoloNome = u => u.role !== 'admin' ? 'Tecnico' : !SERVER ? 'Titolare / segreteria' : u.titolare ? 'Amministratore' : 'Segreteria';
 function renderShell(){
   const chi = nomeAccesso();
   $('#who').innerHTML = `<span class="who-ic">👤</span><b>${esc(chi)}</b>${isAdmin() ? '' : '<br><small>Tecnico</small>'}`;
@@ -3531,13 +3566,14 @@ function viewSettings(){
       <div><button onclick="saveSettings()">Salva impostazioni</button></div>
     </div></div>
     <div class="card"><h3>Utenti e ruoli</h3>
-      <p class="muted small" style="margin-top:0">Titolare e segreteria vedono tutto. I tecnici vedono solo agenda, giro, clienti (senza dati fiscali) e magazzino.</p>
+      <p class="muted small" style="margin-top:0">${SERVER ? 'Amministratore e segreteria' : 'Titolare e segreteria'} vedono tutto. I tecnici vedono solo agenda, giro, clienti (senza dati fiscali) e magazzino.</p>
       <div class="tbl-wrap"><table><thead><tr><th>Nome</th><th>Ruolo</th><th></th></tr></thead><tbody>
       ${db.users.map(u => `<tr><td><span class="badge" style="background:${u.color};color:#fff">&nbsp;</span> <b>${esc(u.name)}</b><br><small class="muted">${esc(u.email)}</small></td>
-        <td>${u.role === 'admin' ? 'Titolare / segreteria' : 'Tecnico'}</td>
-        <td class="acts">${SERVER && u.role === 'tecnico' ? `<button class="sm" onclick="collegaTelefono('${u.id}')">📱 Collega telefono</button>` : ''}<button class="ghost sm" onclick="userForm('${u.id}')">Modifica</button><button class="danger sm" onclick="delUser('${u.id}')">✕</button></td></tr>`).join('')}
+        <td>${ruoloNome(u)}</td>
+        <td class="acts">${u.titolare && !me.titolare ? '<small class="muted">gestito da Fabrizio</small>' : `${SERVER && u.role === 'tecnico' ? `<button class="sm" onclick="collegaTelefono('${u.id}')">📱 Collega telefono</button>` : ''}<button class="ghost sm" onclick="userForm('${u.id}')">Modifica</button>${u.id === me.id ? '' : `<button class="danger sm" onclick="delUser('${u.id}')">✕</button>`}`}</td></tr>`).join('')}
       </tbody></table></div>
-      <div class="actions" style="margin-top:10px"><button class="ghost" onclick="userForm()">+ Nuovo utente</button></div>
+      <div class="actions" style="margin-top:10px"><button class="ghost" onclick="userForm()">+ Nuovo utente</button>${SERVER ? '<button class="ghost" onclick="formMiaPw()">🔑 Cambia la mia password</button>' : ''}</div>
+      ${SERVER ? '<p class="muted small">Password dimenticata da un utente della segreteria? Apri "Modifica" e scrivi una password temporanea: al primo accesso dovrà sceglierne una sua.</p>' : ''}
     </div>
     ${SERVER ? `<div class="card"><h3>📱 Telefoni dei tecnici</h3>
       <p class="muted small" style="margin-top:0">Telefoni collegati con "Collega telefono". Se un telefono si perde o cambia, revocalo: esce subito.</p>
@@ -3564,10 +3600,10 @@ function userForm(id){
     <div class="grid2">
       <label>Nome e cognome<input id="u-name" value="${esc(u.name)}"></label>
       <label>Email (per l'accesso)${SERVER ? ' <small class="muted">i tecnici possono lasciarla vuota</small>' : ''}<input id="u-email" type="email" value="${esc(u.email)}"></label>
-      <label>Ruolo<select id="u-role"><option value="tecnico" ${u.role === 'tecnico' ? 'selected' : ''}>Tecnico</option><option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Titolare / segreteria</option></select></label>
+      <label>Ruolo<select id="u-role"><option value="tecnico" ${u.role === 'tecnico' ? 'selected' : ''}>Tecnico</option><option value="admin" ${u.role === 'admin' ? 'selected' : ''}>${SERVER ? (u.titolare ? 'Amministratore' : 'Segreteria') : 'Titolare / segreteria'}</option></select></label>
       <label>Telefono<input id="u-phone" value="${esc(u.phone)}"></label>
       <label>Colore in agenda<input id="u-color" type="color" value="${u.color}"></label>
-      <label>Password ${id ? '(lascia vuoto per non cambiarla)' : ''}${SERVER ? ' <small class="muted">solo per la segreteria</small>' : ''}<input id="u-pass" type="password"></label>
+      <label>${SERVER && id !== me.id ? 'Password temporanea' : 'Password'} ${id ? '(lascia vuoto per non cambiarla)' : ''}${SERVER ? ` <small class="muted">${id === me.id ? 'la tua password' : 'solo per la segreteria: al primo accesso dovrà sceglierne una sua'}</small>` : ''}<input id="u-pass" type="password" autocomplete="new-password"></label>
     </div>
     ${SERVER ? '<p class="muted small">I tecnici non hanno bisogno di email e password: dopo aver salvato, usa "📱 Collega telefono" nell\'elenco utenti.</p>' : ''}`,
     `<button class="ghost" onclick="closeModal()">Annulla</button><button onclick="saveUser('${id || ''}')">Salva</button>`);
