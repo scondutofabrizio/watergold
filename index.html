@@ -1011,7 +1011,7 @@ function render(){
   if (view === 'clienti') drawClients();
   if (view === 'magazzino') drawStock();
   if (view === 'qr') makeQr();
-  if (view === 'impost' && SERVER) caricaTelefoni();
+  if (view === 'impost' && SERVER) { caricaTelefoni(); if (me.titolare) caricaAccessi(); }
   if (view === 'pianifica') drawPlanMap(); else if (plMapObj) { plMapObj.remove(); plMapObj = null; }
   if (view === 'magazzino' && ui.scanned) setTimeout(() => { const s = document.getElementById('scan'); if (s) s.focus(); }, 0);
 }
@@ -3580,6 +3580,10 @@ function viewSettings(){
       <div class="actions" style="margin-top:10px"><button class="ghost" onclick="userForm()">+ Nuovo utente</button>${SERVER ? '<button class="ghost" onclick="formMiaPw()">🔑 Cambia la mia password</button>' : ''}</div>
       ${SERVER ? '<p class="muted small">Password dimenticata da un utente della segreteria? Apri "Modifica" e scrivi una password temporanea: al primo accesso dovrà sceglierne una sua.</p>' : ''}
     </div>
+    ${SERVER && me.titolare ? `<div class="card"><h3>🔐 Accessi <small class="muted">(lo vedi solo tu)</small></h3>
+      <p class="muted small" style="margin-top:0">Chi è entrato e quando, chi deve ancora cambiare la password temporanea e da quali dispositivi.</p>
+      <div id="acc-list" class="small muted">Caricamento…</div>
+      <div class="actions" style="margin-top:8px"><button class="ghost sm" onclick="caricaAccessi()">↻ Aggiorna</button></div></div>` : ''}
     ${SERVER ? `<div class="card"><h3>📱 Telefoni dei tecnici</h3>
       <p class="muted small" style="margin-top:0">Telefoni collegati con "Collega telefono". Se un telefono si perde o cambia, revocalo: esce subito.</p>
       <div id="dev-list" class="small muted">Caricamento…</div></div>` : ''}
@@ -3672,6 +3676,32 @@ async function caricaTelefoni(){
       <span class="muted">dal ${fmtStamp(d.creato)}</span> ${d.stato === 'ok' ? `<button class="danger sm" onclick="revocaTelefono(${d.n}, ${esc(JSON.stringify(d.nome))})">Revoca</button>` : ''}</div>`).join('')
       : '<p class="muted">Nessun telefono collegato.</p>';
   } catch(e) { el.textContent = 'Elenco non disponibile (' + e.message + ').'; }
+}
+// Riquadro "Accessi" (solo amministratore): stato della password, ultimo accesso, errori recenti e dispositivi
+async function caricaAccessi(){
+  const el = document.getElementById('acc-list');
+  if (!el) return;
+  try {
+    const {accessi} = await srvApi('/api/accessi');
+    const ord = {admin: 0, tecnico: 1};
+    el.classList.remove('muted');
+    el.innerHTML = `<div class="tbl-wrap"><table><thead><tr><th>Utente</th><th>Password</th><th>Ultimo accesso</th><th>Dispositivi</th></tr></thead><tbody>
+      ${accessi.sort((a, b) => (ord[a.role] ?? 2) - (ord[b.role] ?? 2) || (b.titolare - a.titolare)).map(a => {
+        const pw = a.role === 'tecnico' && !a.password ? '<span class="muted">entra dal telefono collegato</span>'
+          : !a.password ? '⚪ non impostata' : a.temporanea ? '🟡 <b>temporanea</b>: deve ancora sceglierne una sua' : '🟢 scelta dall’utente';
+        const ultimo = a.ultimo ? fmtStamp(a.ultimo) : (a.role === 'tecnico' ? (a.dispositivi.length ? 'telefono collegato' : '<span class="muted">telefono non collegato</span>') : '<span class="muted">mai</span>');
+        const err = a.errori24h ? `<br><small>⚠️ ${a.errori24h} password sbagliat${a.errori24h > 1 ? 'e' : 'a'} nelle ultime 24 ore</small>` : '';
+        const devs = a.dispositivi.length ? a.dispositivi.map(d => `<div>${d.stato === 'ok' ? '🟢' : '⏳ in attesa ·'} ${esc(d.descr || '')} <small class="muted">dal ${fmtStamp(d.creato)}</small>
+          <button class="danger sm" onclick="revocaAccesso(${d.n}, ${esc(JSON.stringify(a.nome))})">${d.stato === 'ok' ? 'Revoca' : 'Rifiuta'}</button></div>`).join('') : '<span class="muted">nessuno</span>';
+        return `<tr><td><b>${esc(a.nome)}</b><br><small class="muted">${a.titolare ? 'Amministratore' : a.role === 'admin' ? 'Segreteria' : 'Tecnico'}${a.email ? ' · ' + esc(a.email) : ''}</small></td>
+          <td>${pw}</td><td>${ultimo}${err}</td><td>${devs}</td></tr>`;
+      }).join('')}</tbody></table></div>`;
+  } catch(e) { el.textContent = 'Elenco non disponibile (' + e.message + ').'; }
+}
+async function revocaAccesso(n, nome){
+  if (!confirm(`Togliere l'accesso da questo dispositivo di ${nome}? Esce subito; per rientrare da lì servirà una nuova approvazione.`)) return;
+  try { await srvApi('/api/revoca', {n}); } catch(e) { return alert('Non riuscito: ' + e.message); }
+  caricaAccessi(); caricaTelefoni();
 }
 async function revocaTelefono(n, nome){
   if (!confirm(`Revocare questo telefono di ${nome}? Uscirà subito; per rientrare servirà un nuovo collegamento.`)) return;
