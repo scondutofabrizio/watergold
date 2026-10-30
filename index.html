@@ -933,9 +933,14 @@ function showLogin(err = ''){
     <b>Tecnico:</b> salvo@watergold.demo · tecnico123 (anche giuseppe@, antonino@ e francesco@watergold.demo)</div>`}
   </div>`;
 }
+let loginInCorso = false;   // più clic su "Entra": una sola richiesta (altrimenti una richiesta di approvazione per clic)
 async function login(){
   const e = val('l-email').trim().toLowerCase(), p = val('l-pass');
-  if (SERVER) return srvLogin(e, p);
+  if (SERVER) {
+    if (loginInCorso) return;
+    loginInCorso = true;
+    try { return await srvLogin(e, p); } finally { loginInCorso = false; }
+  }
   const u = db.users.find(x => x.email === e && x.pass === hashPw(p));
   if (!u) return showLogin('Email o password non corrette.');
   localStorage.setItem(ME_KEY, u.id);
