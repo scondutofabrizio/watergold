@@ -145,6 +145,17 @@ th{font-size:13px;color:var(--muted);font-weight:600}
 .req .ans{margin-top:8px;padding:8px 10px;border-left:3px solid var(--brand);background:var(--soft);border-radius:6px;font-size:14px}
 @media (max-width:760px){#req-fab{bottom:82px;right:12px;padding:10px 14px;font-size:14px}}
 @media print{#req-fab{display:none}}
+#req-fab .nuovi{background:#d64541;color:#fff;border-radius:99px;padding:0 7px;margin-left:6px;font-size:13px}
+.chat-box{max-height:55vh;min-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:4px 2px 8px}
+.chat-m{max-width:85%;padding:8px 11px;border-radius:12px;line-height:1.4;white-space:normal;word-wrap:break-word}
+.chat-m small{display:block;opacity:.7;font-size:11px;margin-bottom:2px}
+.chat-m.io{align-self:flex-end;background:#dcefff;color:#0f2b40}
+.chat-m.claude{align-self:flex-start;background:#f1f3f5;color:#1d2733}
+.chat-m.fabrizio{align-self:flex-start;background:#fff4d6;color:#3d2f00}
+[data-theme="dark"] .chat-m.io{background:#1f4c73;color:#eaf4ff}
+[data-theme="dark"] .chat-m.claude{background:#2a323b;color:#e6edf3}
+[data-theme="dark"] .chat-m.fabrizio{background:#4a3d12;color:#fff4d6}
+.chat-lavoro{align-self:flex-start;font-size:13px;opacity:.8}
 @media (max-width:760px){
   .app{flex-direction:column}
   .side{width:100%;padding:10px}
@@ -996,6 +1007,7 @@ function renderShell(){
   $('#who-m').textContent = '👤 ' + chi;
   // "Chiedi una modifica" serve solo all'amministrazione
   $('#req-fab').style.display = isAdmin() ? '' : 'none';
+  if (SERVER && isAdmin()) chatAvvia();
   const secs = SECTIONS.filter(s => s.roles.includes(me.role));
   if (!secs.some(s => s.id === view)) view = secs[0].id;
   $('#nav').classList.toggle('few', secs.length <= 5);   // tecnico: poche sezioni, centrate e larghe
@@ -3833,8 +3845,85 @@ const RICHIESTE = [
    risposta:'Questa richiesta ci è arrivata di nuovo, uguale a quella del 28/10, che è già fatta: il tipo di intervento si scrive in Agenda → Nuovo appuntamento o Modifica (campo "Tipo di intervento / impianto") e in Pianifica giri con il tasto ✏️ su ogni cliente; per i guasti in Agenda c\'è il pulsante "🔧 Cliente con un guasto", dove scrivi il problema del cliente. Non riesci a trovarli, oppure non funzionano come ti serve? Scrivici con una nuova richiesta cosa manca o cosa vorresti diverso.'}
 ];
 const REQ_STATI = {ricevuta:['Ricevuta',''], lavorazione:['In lavorazione','in_corso'], fatta:['Fatta','completato'], chiarire:['Da chiarire','annullato']};
+// ---------- Chat con l'assistente (solo con il server): la segreteria scrive, Claude risponde e sistema il gestionale ----------
+let chatMsgs = [], chatLavoro = false, chatTimer = null, chatInvio = false, chatGiro = 0;
+const CHAT_VISTO = 'watergold-chat-visto';
+function chatAvvia(){
+  if (chatTimer) return;
+  chatAggiorna();
+  chatTimer = setInterval(chatAggiorna, 4000);
+}
+async function chatAggiorna(){
+  if (!SERVER || !me || !isAdmin()) return;
+  const aperta = !!document.getElementById('chat-box');
+  if (!aperta && !chatLavoro && chatGiro++ % 5) return;   // a finestra chiusa e senza lavori in corso: ogni 20 secondi
+  try {
+    const dopo = chatMsgs.length ? chatMsgs[chatMsgs.length - 1].n : 0;
+    const r = await srvApi('/api/chat?dopo=' + dopo);
+    chatMsgs = chatMsgs.concat(r.msgs.filter(m => !chatMsgs.some(x => x.n === m.n)));
+    const cambio = r.msgs.length || r.lavoro !== chatLavoro;
+    chatLavoro = r.lavoro;
+    if (aperta && cambio) chatDisegna();
+    chatEtichetta();
+  } catch(e) {}
+}
+function chatVisto(){ let v = 0; try { v = +localStorage.getItem(CHAT_VISTO + me.id) || 0; } catch(e) {} return v; }
+function chatEtichetta(){
+  const b = $('#req-fab');
+  if (!b) return;
+  const nuovi = chatMsgs.filter(m => m.n > chatVisto() && m.chi !== 'cliente' && !(m.chi === 'fabrizio' && me.titolare)).length;
+  b.innerHTML = '💬 Assistenza' + (chatLavoro ? ' ⏳' : '') + (nuovi ? `<span class="nuovi">${nuovi}</span>` : '');
+}
+function chatTesto(t){ return esc(t).replace(/\n/g, '<br>').replace(/\*\*(.+?)\*\*/g, '<b>$1</b>'); }
+function chatDisegna(){
+  const box = document.getElementById('chat-box');
+  if (!box) return;
+  const giu = box.scrollHeight - box.scrollTop - box.clientHeight < 60;
+  box.innerHTML = (chatMsgs.length ? '' : '<p class="muted small">Scrivi qui cosa ti serve: una domanda su come si fa una cosa, un problema o una modifica da fare al gestionale. Ti risponde l\'assistente, e se serve sistema il gestionale.</p>')
+    + chatMsgs.map(m => {
+      const mio = m.chi === 'cliente' ? !me.titolare || m.nome === me.name : m.chi === 'fabrizio' && me.titolare;
+      const cls = mio ? 'io' : m.chi === 'claude' ? 'claude' : m.chi === 'fabrizio' ? 'fabrizio' : 'claude';
+      const chi = m.chi === 'claude' ? '🤖 Assistente' : m.chi === 'fabrizio' ? '👤 Fabrizio' : '👤 ' + m.nome;
+      return `<div class="chat-m ${cls}"><small>${esc(chi)} · ${fmtStamp(m.t)}</small>${chatTesto(m.testo)}</div>`;
+    }).join('')
+    + (chatLavoro ? '<div class="chat-lavoro">⏳ L\'assistente sta lavorando alla tua richiesta… se deve cambiare il gestionale può volerci qualche minuto. Puoi chiudere questa finestra: la risposta resta qui.</div>' : '');
+  if (giu || !box.dataset.pronta) box.scrollTop = box.scrollHeight;
+  box.dataset.pronta = 1;
+  if (chatMsgs.length) try { localStorage.setItem(CHAT_VISTO + me.id, chatMsgs[chatMsgs.length - 1].n); } catch(e) {}
+  chatEtichetta();
+}
+function chatApri(){
+  if (!me || !isAdmin()) return;
+  modal('💬 Assistenza', `
+    <div id="chat-box" class="chat-box"></div>
+    <textarea id="chat-txt" rows="3" placeholder="Scrivi il tuo messaggio…" onkeydown="if(event.key==='Enter'&&(event.ctrlKey||event.metaKey))chatManda()"></textarea>
+    ${me.titolare ? '<label class="chk"><input type="checkbox" id="chat-claude" checked> Fai rispondere l\'assistente (togli la spunta per scrivere solo a Mari)</label>' : ''}
+    <p class="muted small" style="margin:4px 0 0">Non scrivere nomi, telefoni o indirizzi dei clienti: descrivi il problema con parole tue.</p>`,
+    `<button class="ghost" onclick="closeModal()">Chiudi</button><button id="chat-invia" onclick="chatManda()">Invia</button>`);
+  chatDisegna();
+  chatAggiorna();
+  setTimeout(() => { const t = document.getElementById('chat-txt'); if (t) t.focus(); }, 50);
+}
+async function chatManda(){
+  const t = document.getElementById('chat-txt');
+  const testo = t ? t.value.trim() : '';
+  if (!testo || chatInvio) return;
+  chatInvio = true;
+  const b = document.getElementById('chat-invia');
+  if (b) b.disabled = true;
+  try {
+    const dopo = chatMsgs.length ? chatMsgs[chatMsgs.length - 1].n : 0;
+    const r = await srvApi('/api/chat', {testo, dopo, claude: me.titolare ? chk('chat-claude') : true});
+    chatMsgs = chatMsgs.concat(r.msgs.filter(m => !chatMsgs.some(x => x.n === m.n)));
+    chatLavoro = r.lavoro;
+    if (t) t.value = '';
+    chatDisegna();
+  } catch(e) { alert(e.auth ? 'Accesso scaduto: entra di nuovo.' : 'Messaggio non inviato: ' + (e.message === 'Failed to fetch' ? 'server non raggiungibile.' : e.message)); }
+  finally { chatInvio = false; if (b) b.disabled = false; }
+}
 function reqForm(){
   if (!me || !isAdmin()) return;
+  if (SERVER) return chatApri();
   const sec = SECTIONS.find(x => x.id === view);
   modal('✏️ Chiedi una modifica', `
     <p class="muted small" style="margin-top:0">Scrivi con parole tue cosa vorresti cambiare o aggiungere. La richiesta arriva direttamente a chi sviluppa il gestionale e trovi la risposta in "Le tue richieste".</p>
