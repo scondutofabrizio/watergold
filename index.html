@@ -2355,7 +2355,7 @@ function listaPdf(pagine){
       <div class="note"><small>Spese e note</small><i></i><i></i><i></i></div>
       ${qrSito ? `<div class="qr"><img src="${qrSito}" alt=""><div><small>Il nostro sito</small><b>${esc(sitoTxt)}</b><span>Inquadra il codice con la fotocamera</span></div></div>` : ''}
     </div>
-    <footer>${esc(s.company)} · ${esc(s.address)}${s.site ? ' · ' + esc(s.site.replace(/^https?:\/\//, '')) : ''}</footer>
+    <footer>${[esc(s.company), esc(s.address), esc((s.site || '').replace(/^https?:\/\//, ''))].filter(Boolean).join(' · ')}</footer>
   </section>`;
   };
   w.document.write(`<!doctype html><html lang="it"><head><meta charset="utf-8"><title>${esc(nomeFile)}</title>
