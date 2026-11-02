@@ -1899,6 +1899,11 @@ function viewPianifica(){
     <button class="big" style="max-width:520px" onclick="planGiri()" ${sel.length && p.techs.length ? '' : 'disabled'}>⚡ Calcola i giri automaticamente</button>
     <p class="muted small" style="margin-bottom:0">Raggruppa i clienti vicini, assegna un gruppo a ogni tecnico, ordina il percorso più corto e calcola orari e chilometri. Al posto di chi non risponde propone da solo il cliente libero più vicino.</p>
   </div>
+  ${db.plan ? '' : `<div class="card">
+    <div class="top"><h3 style="margin:0">🗺️ Clienti di ${mesLabel(p.month)} sulla mappa</h3><small class="muted">${meseLegenda()}</small></div>
+    <div id="plmap"></div>
+    <p class="muted small" style="margin:6px 0 0">Tocca un punto per vedere cliente, indirizzo e scadenza e per metterlo in agenda.</p>
+  </div>`}
   <div class="card">
     <div class="top"><h3 style="margin:0">📋 Manutenzioni di ${mesLabel(p.month)}</h3>
       <button class="${ui.plMese ? '' : 'ghost'} sm" onclick="ui.plMese=!ui.plMese;render()">${ui.plMese ? 'Nascondi' : 'Mostra tutte'}</button></div>
@@ -1945,7 +1950,9 @@ function planResult(){
         <button class="sm ${ui.plTech === 'all' ? '' : 'ghost'}" onclick="setPlTech('all')">Tutti i tecnici</button>
         ${day.routes.map(r => { const t = byId(db.users, r.techId) || {color: '#888', name: '—'}; const on = ui.plTech === r.techId;
           return `<button class="sm ${on ? '' : 'ghost'}" style="${on ? 'background:' + t.color : 'border-left:4px solid ' + t.color}" onclick="setPlTech('${r.techId}')">${esc(t.name.split(' ')[0])} · ${routeInfo(r).rows.length}</button>`; }).join('')}
+        <button class="sm ${ui.plTutti ? '' : 'ghost'}" onclick="ui.plTutti=!ui.plTutti;ui.plView=null;render()" title="Mostra sulla mappa tutti i clienti del mese">📍 Tutto il mese</button>
       </div></div>
+    ${ui.plTutti ? `<p class="small muted" style="margin:4px 0">${meseLegenda()}</p>` : ''}
     <div id="plmap"></div>
     <p class="muted small" style="margin:6px 0 0">🏠 sede · cerchi numerati = ordine delle tappe · puntini grigi = clienti liberi in zona · tocca un punto per vedere il cliente, chiamarlo o aggiungerlo</p>
   </div>
@@ -2225,12 +2232,27 @@ function drawLabels(map, grp){
     for (const [nm, la, lo, c] of baseData.n) { if (n > 160) break; if (b.contains([la, lo])) { lab(la, lo, nm, 'mlab-via'); n++; } }
   }
 }
+// Clienti con la manutenzione nel mese scelto in Pianifica giri (con gli arretrati se spuntati), anche già in agenda
+function clientiDelMese(){
+  const p = ui.pl || defaultPl(), end = lastDayOf(p.month), start = p.month + '-01';
+  const inAgenda = new Set(db.appointments.filter(a => a.status === 'programmato' || a.status === 'in_corso').map(a => a.clientId));
+  return db.clients.filter(c => c.prossimoCambio && c.lat && c.prossimoCambio <= end && (p.arretrati || c.prossimoCambio >= start))
+    .map(c => ({c, stato: inAgenda.has(c.id) ? 'agenda' : c.prossimoCambio < ymd(new Date()) ? 'ritardo' : 'da_fare'}));
+}
+const MESE_COLORI = {da_fare: '#0b7bc1', ritardo: '#d64541', agenda: '#2e9e5b'};
+function meseLegenda(){
+  const l = clientiDelMese(), n = k => l.filter(x => x.stato === k).length;
+  const approx = l.filter(x => x.c.geoApprox).length;
+  const pallino = k => `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${MESE_COLORI[k]};vertical-align:middle"></span>`;
+  return `${pallino('da_fare')} da programmare ${n('da_fare')} · ${pallino('ritardo')} in ritardo ${n('ritardo')} · ${pallino('agenda')} già in agenda ${n('agenda')}`
+    + (approx ? ` · 📍 ${approx} con posizione indicativa (zona del comune): l'indirizzo esatto è nella scheda` : '');
+}
 function drawPlanMap(){
   const box = document.getElementById('plmap');
   if (plMapObj) { plMapObj.remove(); plMapObj = null; }
-  if (!box || !db.plan) return;
-  const di = ui.plDay, day = db.plan.days[di];
-  if (typeof L === 'undefined' || baseData === false) { box.outerHTML = planMap(day); return; }
+  if (!box) return;
+  const di = ui.plDay, day = db.plan ? db.plan.days[di] : null;
+  if (typeof L === 'undefined' || baseData === false) { box.outerHTML = day ? planMap(day) : '<p class="muted small">Mappa non disponibile (serve la connessione internet).</p>'; return; }
   const map = L.map(box, {scrollWheelZoom: false, preferCanvas: true, attributionControl: true});
   plMapObj = map;
   map.attributionControl.setPrefix(false).addAttribution('© OpenStreetMap contributors');
@@ -2255,7 +2277,20 @@ function drawPlanMap(){
   const dep = db.settings.depot;
   const bounds = [];
   const sel = ui.plTech || 'all';
-  day.routes.forEach((r, ri) => {
+  // tutti i clienti del mese: senza giri calcolati sempre, con i giri se è attivo "Tutto il mese"
+  const mese = !day || ui.plTutti;
+  if (mese) {
+    const inGiro = day ? new Set(day.routes.flatMap(r => routeInfo(r).rows.map(x => x.c.id))) : new Set();
+    clientiDelMese().filter(x => !inGiro.has(x.c.id)).forEach(({c, stato}) => {
+      L.circleMarker([c.lat, c.lng], {radius: 6, color: '#fff', weight: 1, fillColor: MESE_COLORI[stato], fillOpacity: .85}).addTo(map)
+        .bindPopup(`<b>${esc(c.name)}</b><br>${esc(c.address)}${c.city && !String(c.address).includes(c.city) ? ', ' + esc(c.city) : ''}
+          <br><small>Scadenza ${fmtDate(c.prossimoCambio)}${stato === 'ritardo' ? ' · <b>in ritardo</b>' : ''}${stato === 'agenda' ? ' · <b>già in agenda</b>' : ''}${c.geoApprox ? '<br>📍 posizione indicativa sulla mappa' : ''}</small>
+          <div class="row-acts">${stato === 'agenda' ? '' : `<button class="sm" onclick="appForm({clientId:'${c.id}'})">📅 Metti in agenda</button>`}${day && stato !== 'agenda' ? `<button class="ghost sm" onclick="mapPick(${di},'${c.id}')">+ Aggiungi a un giro</button>` : ''}
+          <a class="btn ghost sm" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(c.address + ' ' + (c.city || ''))}" target="_blank" rel="noopener">Google Maps</a></div>`);
+      if (!day) bounds.push([c.lat, c.lng]);
+    });
+  }
+  if (day) day.routes.forEach((r, ri) => {
     const t = byId(db.users, r.techId) || {color: '#888', name: '—'};
     const on = sel === 'all' || sel === r.techId;
     const info = routeInfo(r);
@@ -2271,9 +2306,9 @@ function drawPlanMap(){
       if (on) bounds.push([x.c.lat, x.c.lng]);
     });
   });
-  // clienti liberi in zona: toccandoli si sceglie in quale giro metterli
-  const all = day.routes.flatMap(r => routeInfo(r).rows.map(x => x.c));
-  if (all.length) {
+  // clienti liberi in zona: toccandoli si sceglie in quale giro metterli (con "Tutto il mese" ci sono già)
+  const all = day ? day.routes.flatMap(r => routeInfo(r).rows.map(x => x.c)) : [];
+  if (all.length && !mese) {
     const la = all.map(c => c.lat), lo = all.map(c => c.lng);
     const box2 = [Math.min(...la) - .01, Math.max(...la) + .01, Math.min(...lo) - .01, Math.max(...lo) + .01];
     plCandidates().filter(c => c.lat > box2[0] && c.lat < box2[1] && c.lng > box2[2] && c.lng < box2[3]).forEach(c => {
@@ -2283,7 +2318,7 @@ function drawPlanMap(){
   }
   if (all.some(c => hav(c, dep) < 30)) L.marker([dep.lat, dep.lng], {icon: L.divIcon({className: '', iconSize: [22, 22], iconAnchor: [11, 11],
     html: '<div style="width:22px;height:22px;border-radius:5px;background:#e3b64b;border:2px solid #0f2b40;font-size:12px;line-height:18px;text-align:center">🏠</div>'})}).addTo(map).bindPopup(esc(dep.label));
-  const keep = ui.plView && ui.plView.key === di + '|' + sel;
+  const keep = ui.plView && ui.plView.key === (day ? di : 'mese') + '|' + sel + '|' + mese;
   if (keep) map.setView(ui.plView.center, ui.plView.zoom);
   else if (bounds.length) map.fitBounds(bounds, {padding: [30, 30], maxZoom: 16});
   else map.setView([dep.lat, dep.lng], 12);
@@ -2298,7 +2333,7 @@ function drawPlanMap(){
       commit();
     });
   }
-  map.on('moveend', () => { ui.plView = {key: di + '|' + sel, center: map.getCenter(), zoom: map.getZoom()}; });
+  map.on('moveend', () => { ui.plView = {key: (day ? di : 'mese') + '|' + sel + '|' + mese, center: map.getCenter(), zoom: map.getZoom()}; });
 }
 function setPlTech(v){ ui.plTech = v; ui.plView = null; render(); }
 
@@ -3842,7 +3877,9 @@ const RICHIESTE = [
   {data:'2026-10-28', sezione:'Agenda', testo:"DEVO SCRIVERE L'IMPORTO CHE IL CLIENTE DOVRA' PAGARE.", stato:'fatta',
    risposta:'Fatto. In Agenda, quando crei o modifichi un appuntamento, c\'è il nuovo campo "💶 Importo che il cliente dovrà pagare": scrivi la cifra da incassare. Il tecnico la vede in verde ("💶 Da pagare") nell\'Agenda, in "Il mio giro" e nel rapporto stampabile. Se lasci il campo vuoto non compare nulla. Aggiornamento: l\'importo (IVA inclusa) va anche in fattura, al posto di manodopera e materiali; il totale della fattura è proprio la cifra che hai scritto.'},
   {data:'2026-10-29', sezione:'Pianifica giri', testo:'DEVO AVERE LA POSSIBILITA\' DI SCRIVERE IL TIPO DI INTERVENTO CHE IL TECNICO FARA\' DAL CLIENTE CHE SI RITROVA IN AGENDA. ABBIAMO DIVERSI IMPIANTI E DEVO SPECIFICARE IL TIPO DI CAMBIO FILTRI EFFETTUARE.\nDEVO POTER INSERIRE IN AGENDA UN CLIENTE CHE NON DEVE CAMBIARE I FILTRI MA CHE HA BISOGNO DEL TECNICO PER UN GUASTO E SPECIFICARE IL PROBLEMA CHE ESPONE IL CLIENTE', stato:'chiarire',
-   risposta:'Questa richiesta ci è arrivata di nuovo, uguale a quella del 28/10, che è già fatta: il tipo di intervento si scrive in Agenda → Nuovo appuntamento o Modifica (campo "Tipo di intervento / impianto") e in Pianifica giri con il tasto ✏️ su ogni cliente; per i guasti in Agenda c\'è il pulsante "🔧 Cliente con un guasto", dove scrivi il problema del cliente. Non riesci a trovarli, oppure non funzionano come ti serve? Scrivici con una nuova richiesta cosa manca o cosa vorresti diverso.'}
+   risposta:'Questa richiesta ci è arrivata di nuovo, uguale a quella del 28/10, che è già fatta: il tipo di intervento si scrive in Agenda → Nuovo appuntamento o Modifica (campo "Tipo di intervento / impianto") e in Pianifica giri con il tasto ✏️ su ogni cliente; per i guasti in Agenda c\'è il pulsante "🔧 Cliente con un guasto", dove scrivi il problema del cliente. Non riesci a trovarli, oppure non funzionano come ti serve? Scrivici con una nuova richiesta cosa manca o cosa vorresti diverso.'},
+  {data:'2026-11-02', sezione:'Pianifica giri', testo:"NELLA MAPPA VORREI VEDERE GLI INDIRIZZI DI TUTTI I CLIENTI PREVISTI PER L'INTERO MESE SELEZONATO", stato:'fatta',
+   risposta:'Fatto. In Pianifica giri c\'è ora la mappa "🗺️ Clienti del mese": mostra tutti i clienti con la manutenzione nel mese che scegli in "Mese delle scadenze" (con gli arretrati, se spunti la casella). Colori: blu da programmare, rosso in ritardo, verde già in agenda. Toccando un punto vedi nome, indirizzo e scadenza, e puoi mettere il cliente in agenda o aprirlo in Google Maps. Quando hai già calcolato i giri, sopra la mappa del giorno premi "📍 Tutto il mese" per vedere insieme ai giri anche tutti gli altri clienti del mese. Per i clienti importati dal file la posizione sulla mappa è indicativa (zona del comune): l\'indirizzo esatto è quello scritto nella scheda.'}
 ];
 const REQ_STATI = {ricevuta:['Ricevuta',''], lavorazione:['In lavorazione','in_corso'], fatta:['Fatta','completato'], chiarire:['Da chiarire','annullato']};
 // ---------- Chat con l'assistente (solo con il server): la segreteria scrive, Claude risponde e sistema il gestionale ----------
