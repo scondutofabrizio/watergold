@@ -1954,9 +1954,27 @@ function planResult(){
       </div></div>
     ${ui.plTutti ? `<p class="small muted" style="margin:4px 0">${meseLegenda()}</p>` : ''}
     <div id="plmap"></div>
-    <p class="muted small" style="margin:6px 0 0">🏠 sede · cerchi numerati = ordine delle tappe · puntini grigi = clienti liberi in zona · tocca un punto per vedere il cliente, chiamarlo o aggiungerlo</p>
+    <p class="muted small" style="margin:6px 0 0">🏠 sede · cerchi numerati = ordine delle tappe · 📅 = appuntamenti già in agenda quel giorno · puntini grigi = clienti liberi in zona · tocca un punto per vedere il cliente, chiamarlo o aggiungerlo</p>
   </div>
+  ${(() => { const senza = tecnici().filter(t => !day.routes.some(r => r.techId === t.id) && (ui.plTech === 'all' || ui.plTech === t.id) && agendaGiro(day.date, t.id).length);
+    return senza.map(t => `<div class="card" style="border-left:4px solid ${t.color}"><b>${esc(t.name)}</b> <small class="muted">non ha un giro in questo giorno</small>${agendaGiroHtml(day.date, t.id)}</div>`).join(''); })()}
   <div class="cols">${day.routes.map((r, ri) => ui.plTech === 'all' || ui.plTech === r.techId ? routeCard(di, ri, r) : '').join('')}</div>`;
+}
+// Appuntamenti già presi in Agenda per un tecnico in quel giorno (non nati da questo piano): si vedono nel giro
+function agendaGiro(date, techId){
+  const delPiano = new Set(db.plan ? db.plan.days.flatMap(d => d.routes.flatMap(r => r.stops.map(x => x.apptId).filter(Boolean))) : []);
+  return db.appointments.filter(a => a.date === date && a.techId === techId && (a.status === 'programmato' || a.status === 'in_corso') && !delPiano.has(a.id))
+    .sort((a, b) => String(a.time).localeCompare(String(b.time)));
+}
+function agendaGiroHtml(date, techId, info){
+  const l = agendaGiro(date, techId);
+  if (!l.length) return '';
+  const da = info && info.rows.length ? toMin(db.plan.start) : null, a2 = info ? info.end : null;
+  return `<div class="hint" style="margin:8px 0">📅 <b>Già in agenda quel giorno (${l.length})</b>
+    ${l.map(a => { const c = byId(db.clients, a.clientId), ini = toMin(a.time), fine = ini + (+a.duration || 60);
+      const sovr = da !== null && ini < a2 && fine > da;
+      return `<div class="rowline small"><a href="#" onclick="appForm({}, '${a.id}');return false"><b>${esc(a.time)}</b> ${esc(c ? c.name : 'Cliente')}</a> · ${esc(a.service || '')}${c ? ` <span class="muted">· ${esc(c.address)}</span>` : ''}${sovr ? ' <span class="badge annullato" title="L\u2019orario cade dentro quello del giro: sposta una tappa o l\u2019appuntamento">si sovrappone al giro</span>' : ''}</div>`; }).join('')}
+  </div>`;
 }
 function routeCard(di, ri, r){
   const t = byId(db.users, r.techId) || {color: '#888', name: '—'};
@@ -1975,6 +1993,7 @@ function routeCard(di, ri, r){
         <optgroup label="Da un comune">${towns.map(x => `<option value="${esc(x)}" ${r.start === x ? 'selected' : ''}>${esc(x)}</option>`).join('')}</optgroup>
       </select></label>
     <div class="muted small">${info.rows.length} interventi · ${fmtKm(info.km)} (~${fmtDur(info.guida)} di strada) · ${db.plan.start}–${minToT(info.end)}${info.remote ? ' · zona lontana: orari dal primo cliente' : ''}${info.start && info.start.label && info.start !== db.settings.depot ? ' · parte da ' + esc(info.start.label) : ''}</div>
+    ${agendaGiroHtml(db.plan.days[di].date, r.techId, info)}
     <div class="actions" style="margin:8px 0">
       ${gmapsLinks(pts).map((u, i, a) => `<a class="btn ghost sm" style="padding:5px 9px;font-size:13px" href="${u}" target="_blank" rel="noopener">🗺️ Google Maps${a.length > 1 ? ` ${i + 1}/${a.length}` : ''}</a>`).join('')}
       <button class="ghost sm" onclick="reoptimize(${di},${ri})">↺ Riottimizza</button>
@@ -2304,6 +2323,20 @@ function drawPlanMap(){
           <span class="badge ${x.s.apptId ? 'programmato' : CALL[x.s.call][1]}">${x.s.apptId ? 'In agenda' : CALL[x.s.call][0]}</span>
           ${x.s.apptId ? '' : `<div class="row-acts"><button class="sm" onclick="callForm(${di},${ri},'${x.c.id}')">📞 Chiama</button><button class="ghost sm" onclick="nearForm(${di},${ri},'${x.c.id}')">Più vicini</button></div>`}`);
       if (on) bounds.push([x.c.lat, x.c.lng]);
+    });
+  });
+  // appuntamenti già in Agenda quel giorno (anche dei tecnici senza giro)
+  if (day) tecnici().forEach(t => {
+    const on = sel === 'all' || sel === t.id;
+    agendaGiro(day.date, t.id).forEach(a => {
+      const c = byId(db.clients, a.clientId);
+      if (!c || !c.lat) return;
+      const icon = L.divIcon({className: '', iconSize: [26, 26], iconAnchor: [13, 13],
+        html: `<div style="width:26px;height:26px;border-radius:6px;background:${t.color};color:#fff;font:700 13px/24px system-ui;text-align:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);opacity:${on ? 1 : .25}">📅</div>`});
+      L.marker([c.lat, c.lng], {icon, zIndexOffset: on ? 900 : 0}).addTo(map)
+        .bindPopup(`<b>${esc(t.name)} · in agenda alle ${esc(a.time)}</b><br>${esc(c.name)}<br><small>${esc(c.address)} · ${esc(a.service || '')}</small>
+          <div class="row-acts"><button class="sm" onclick="appForm({}, '${a.id}')">Apri l'appuntamento</button></div>`);
+      if (on) bounds.push([c.lat, c.lng]);
     });
   });
   // clienti liberi in zona: toccandoli si sceglie in quale giro metterli (con "Tutto il mese" ci sono già)
@@ -3879,7 +3912,9 @@ const RICHIESTE = [
   {data:'2026-10-29', sezione:'Pianifica giri', testo:'DEVO AVERE LA POSSIBILITA\' DI SCRIVERE IL TIPO DI INTERVENTO CHE IL TECNICO FARA\' DAL CLIENTE CHE SI RITROVA IN AGENDA. ABBIAMO DIVERSI IMPIANTI E DEVO SPECIFICARE IL TIPO DI CAMBIO FILTRI EFFETTUARE.\nDEVO POTER INSERIRE IN AGENDA UN CLIENTE CHE NON DEVE CAMBIARE I FILTRI MA CHE HA BISOGNO DEL TECNICO PER UN GUASTO E SPECIFICARE IL PROBLEMA CHE ESPONE IL CLIENTE', stato:'chiarire',
    risposta:'Questa richiesta ci è arrivata di nuovo, uguale a quella del 28/10, che è già fatta: il tipo di intervento si scrive in Agenda → Nuovo appuntamento o Modifica (campo "Tipo di intervento / impianto") e in Pianifica giri con il tasto ✏️ su ogni cliente; per i guasti in Agenda c\'è il pulsante "🔧 Cliente con un guasto", dove scrivi il problema del cliente. Non riesci a trovarli, oppure non funzionano come ti serve? Scrivici con una nuova richiesta cosa manca o cosa vorresti diverso.'},
   {data:'2026-11-02', sezione:'Pianifica giri', testo:"NELLA MAPPA VORREI VEDERE GLI INDIRIZZI DI TUTTI I CLIENTI PREVISTI PER L'INTERO MESE SELEZONATO", stato:'fatta',
-   risposta:'Fatto. In Pianifica giri c\'è ora la mappa "🗺️ Clienti del mese": mostra tutti i clienti con la manutenzione nel mese che scegli in "Mese delle scadenze" (con gli arretrati, se spunti la casella). Colori: blu da programmare, rosso in ritardo, verde già in agenda. Toccando un punto vedi nome, indirizzo e scadenza, e puoi mettere il cliente in agenda o aprirlo in Google Maps. Quando hai già calcolato i giri, sopra la mappa del giorno premi "📍 Tutto il mese" per vedere insieme ai giri anche tutti gli altri clienti del mese. Per i clienti importati dal file la posizione sulla mappa è indicativa (zona del comune): l\'indirizzo esatto è quello scritto nella scheda.'}
+   risposta:'Fatto. In Pianifica giri c\'è ora la mappa "🗺️ Clienti del mese": mostra tutti i clienti con la manutenzione nel mese che scegli in "Mese delle scadenze" (con gli arretrati, se spunti la casella). Colori: blu da programmare, rosso in ritardo, verde già in agenda. Toccando un punto vedi nome, indirizzo e scadenza, e puoi mettere il cliente in agenda o aprirlo in Google Maps. Quando hai già calcolato i giri, sopra la mappa del giorno premi "📍 Tutto il mese" per vedere insieme ai giri anche tutti gli altri clienti del mese. Per i clienti importati dal file la posizione sulla mappa è indicativa (zona del comune): l\'indirizzo esatto è quello scritto nella scheda.'},
+  {data:'2026-11-03', sezione:'Pianifica giri', testo:'SE PROGRAMMO UN APPUNTAMENTO IN AGENDA TECNICO, NON LO RITROVO NEL PIANIFICA GIRO', stato:'fatta',
+   risposta:'Fatto. In Pianifica giri, nel giro di ogni tecnico, c\'è ora il riquadro "📅 Già in agenda quel giorno" con gli appuntamenti che gli hai dato in Agenda per quella data (ora, cliente, tipo e indirizzo). Se l\'orario cade dentro quello del giro compare "si sovrappone al giro", così puoi spostare una tappa o l\'appuntamento. Toccando l\'appuntamento lo apri e lo modifichi. Sulla mappa del giorno sono i quadratini 📅 con il colore del tecnico. Se un tecnico ha appuntamenti ma nessun giro quel giorno, compare comunque sopra i giri.'}
 ];
 const REQ_STATI = {ricevuta:['Ricevuta',''], lavorazione:['In lavorazione','in_corso'], fatta:['Fatta','completato'], chiarire:['Da chiarire','annullato']};
 // ---------- Chat con l'assistente (solo con il server): la segreteria scrive, Claude risponde e sistema il gestionale ----------
