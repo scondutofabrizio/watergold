@@ -705,7 +705,7 @@ const SERVER = !!window.WG_SERVER;
 const SRV_KEY = 'watergold-server-v1';
 const COLLS = ['users','clients','items','appointments','invoices','movements'];
 const SINGLES = ['settings','sentWa','reminders','log','lastDaily','plan','v'];
-let srvV = 0, srvSynced = {}, srvDirty = false, srvBusy = false, srvOnline = true, srvPw = {}, srvRender = false, srvCacheMe = null;
+let srvV = 0, srvSynced = {}, srvDirty = false, srvBusy = false, srvOnline = true, srvPw = {}, srvRender = false, srvCacheMe = null, srvGiri = 0;
 function emptyDb(){
   const s = seed().settings;
   return {v:6, users:[], clients:[], items:[], appointments:[], invoices:[], movements:[], sentWa:{}, reminders:{}, log:[], lastDaily:'', plan:null, settings:s};
@@ -800,6 +800,7 @@ async function srvSync(){
     if (!cambi.length && !Object.keys(voci).length && !Object.keys(pw).length) { srvDirty = false; return; }
     srvDirty = false;
     const r = await srvApi('/api/sync', {cambi, voci, password: pw});
+    srvGiri++;
     srvPw = {};
     cambi.forEach(x => { const k = x.c + '|' + x.id; if (now[k] === undefined) delete srvSynced[k]; else srvSynced[k] = now[k]; });
     Object.keys(voci).forEach(k => { srvSynced['_|' + k] = now['_|' + k]; });
@@ -819,9 +820,11 @@ async function srvPoll(){
   if (srvDirty) await srvSync();
   if (srvBusy || srvDirty) return srvStatus();
   try {
+    const giro = srvGiri;
     const r = await srvApi('/api/changes?since=' + srvV);
     srvOnline = true;
-    if (srvDirty || srvBusy) return;
+    // se intanto è partito un salvataggio la risposta è vecchia: non deve coprire le modifiche appena fatte
+    if (srvDirty || srvBusy || giro !== srvGiri) return;
     if (r.tutto) { srvSet(r.tutto, r.v); srvRender = true; }
     else if (r.cambi) {
       r.cambi.forEach(x => {
@@ -1419,6 +1422,7 @@ function saveAppt(id){
   } else {
     x = {id:uid(), ...a, stockApplied:false};
     db.appointments.push(x);
+    logAct(`Nuovo appuntamento del ${fmtDate(a.date)} ore ${a.time} con ${tname(a.techId)}, inserito da ${me.name}`);
   }
   applyStock(x);
   applyFiltri(x);
@@ -1428,7 +1432,9 @@ function saveAppt(id){
 function delAppt(id){
   if (!requireAdmin()) return;
   if (!confirm('Eliminare questo appuntamento?')) return;
-  db.appointments = db.appointments.filter(a => a.id !== id);
+  const a = byId(db.appointments, id);
+  db.appointments = db.appointments.filter(x => x.id !== id);
+  if (a) logAct(`Appuntamento del ${fmtDate(a.date)} ore ${a.time} con ${tname(a.techId)} eliminato da ${me.name}`);
   commit();
 }
 function invoiceOne(aid){
