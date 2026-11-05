@@ -746,6 +746,7 @@ async function srvApi(path, body){
   const r = await fetch(path, body === undefined ? {credentials:'same-origin', cache:'no-store', signal}
     : {method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json', 'X-WG':'1'}, body: JSON.stringify(body), signal});
   if (r.status === 401) { const e = new Error('accesso'); e.auth = true; throw e; }
+  if (r.status === 423) location.reload();   // gestionale sospeso: la pagina mostra l'avviso, le modifiche non inviate restano sul dispositivo
   const j = await r.json().catch(() => ({}));
   if (!r.ok) { const e = new Error(j.errore || ('errore ' + r.status)); e.attesa = !!j.attesa; throw e; }
   return j;
